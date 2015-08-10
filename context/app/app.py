@@ -1,3 +1,6 @@
+import os
+import json
+
 #Routings go here
 
 from flask import Flask, render_template, request, url_for
@@ -21,7 +24,7 @@ app = Flask(__name__)
 #CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
 
 #context_io = c.ContextIO(
-   # consumer_key=CONSUMER_KEY, 
+   # consumer_key=CONSUMER_KEY,
    # consumer_secret=CONSUMER_SECRET)
 
 @app.route('/')
@@ -40,10 +43,25 @@ def index():
    # connection.disconnect()
    #return json_projects
 
+from watson.personality import PersonalityInsightsService
+from watson.tone import ToneAnalyzerService
+
+# Create the Personality Insights Wrapper
+personalityInsights = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
+toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
+
+@app.route('/tone', methods=['POST'])
+def tone():
+    data = request.form['text'];
+    toneJson = toneAnalyzer.getTone(data.encode('utf-8'))
+    return json.dumps(toneJson)
+
+@app.route('/synonym', methods=['POST'])
+def synonym():
+    words = request.form['words'];
+    limit = request.form['limit'];
+    toneJson = toneAnalyzer.getSynonym(words, limit)
+    return json.dumps(toneJson)
+
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)
-
-
-
-
-
