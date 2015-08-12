@@ -5,6 +5,8 @@ import json
 
 from flask import Flask, render_template, request, url_for
 import contextio as c
+from data.datastore import DataStore
+dataStore = DataStore()
 #from pymongo import Connection
 #import json
 #from bson import json_util
@@ -12,9 +14,9 @@ import contextio as c
 
 app = Flask(__name__)
 
-#MONGODB_HOST = 'localhost'
-#MONGODB_PORT = 27017
-#DBS_NAME = 'donorschoose'
+MONGODB_HOST = 'localhost'
+MONGODB_PORT = 27017
+DBS_NAME = 'nous'
 #COLLECTION_NAME = 'projects'
 #FIELDS = {'school_state': True, 'resource_type': True, 'poverty_level': True, 'date_posted': True, 'total_donations': True, '_id': False}
 
@@ -37,6 +39,17 @@ def sendUserInfo():
     firstName = request.json["firstName"]
     email = request.json["email"]
     password = request.json["password"]
+
+    # Check if the user exists
+    user = dataStore.getUser(email)
+    if user != None:
+        raise Exception('Account exists with the provided email')
+
+    user_id = dataStore.createUser(**{
+        '_id': email,
+        'firstname': firstName,
+        'sources': [email]
+    });
     discoveryObject = getServerSettings(context_io, email);
     print discoveryObject.found
     accountData = {
@@ -50,6 +63,7 @@ def sendUserInfo():
         password=password,
         discoveryObject=discoveryObject)
     account.post_sync()
+    dataStore.updateUser(user_id, **{'context_id': account.id})
     return account.id
 
 def getServerSettings(contextioObject,email):
