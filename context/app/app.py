@@ -23,13 +23,57 @@ app = Flask(__name__)
 #CONSUMER_KEY = 'l57sr7jp'
 #CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
 
-#context_io = c.ContextIO(
-   # consumer_key=CONSUMER_KEY,
-   # consumer_secret=CONSUMER_SECRET)
+context_io = c.ContextIO(
+   consumer_key=CONSUMER_KEY,
+   consumer_secret=CONSUMER_SECRET)
 
 @app.route('/')
 def index():
         return render_template('userLogin.html')
+
+# sends user info to be our contextio account so that we can later on see their email
+@app.route('/sendUserInfo', methods=['POST'])
+def sendUserInfo():
+    firstName = request.json["firstName"]
+    email = request.json["email"]
+    password = request.json["password"]
+    discoveryObject = getServerSettings(context_io, email);
+    print discoveryObject.found
+    accountData = {
+        "email": email,
+        "first_name": firstName
+    }
+    account = context_io.post_account(**accountData)
+    sourceAdded = updateServerSettings(
+        accountObject=account,
+        email=email,
+        password=password,
+        discoveryObject=discoveryObject)
+    account.post_sync()
+    return account.id
+
+def getServerSettings(contextioObject,email):
+	source = "IMAP" # contextio only supports IMAP email servers
+	IMAPSettings = {"source_type":source,"email":email}
+	settingForEmail = contextioObject.get_discovery(**IMAPSettings)
+	return settingForEmail
+
+def updateServerSettings(accountObject, email, password, discoveryObject):
+    serverSettingIsUpdated = True
+    sourceData = {
+        "email": email,
+        "server": discoveryObject.imap["server"],
+        "username": discoveryObject.imap["username"],
+        "password": password,
+        "use_ssl": 1,
+        "port": discoveryObject.imap["port"],
+        "type": "IMAP"
+    }
+    print sourceData
+    itIsSuccessful = accountObject.post_source(**sourceData)
+    if itIsSuccessful != False:
+    	serverSettingIsUpdated = False
+    return serverSettingIsUpdated
 
 #@app.route("/donorschoose/projects")
 #def donorschoose_projects():
