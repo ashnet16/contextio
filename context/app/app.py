@@ -3,7 +3,10 @@ import json
 
 #Routings go here
 
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, url_for, make_response, session, redirect
+from authomatic import Authomatic
+from authomatic.adapters import WerkzeugAdapter
+from config import CONFIG
 import contextio as c
 from data.datastore import DataStore
 dataStore = DataStore()
@@ -13,6 +16,7 @@ dataStore = DataStore()
 #from bson.json_util import dumps
 
 app = Flask(__name__)
+app.secret_key = 'nous session key'
 
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
@@ -22,16 +26,86 @@ DBS_NAME = 'nous'
 
 
 # contextio key and secret key
-#CONSUMER_KEY = 'l57sr7jp'
-#CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+CONSUMER_KEY = '9dowia6v'
+CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
    consumer_secret=CONSUMER_SECRET)
 
+authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
+
 @app.route('/')
 def index():
         return render_template('userLogin.html')
+
+@app.route('/login/<provider_name>/', methods=['GET', 'POST'])
+def login(provider_name):
+    # Create an OAuth2 request for the provider
+    response = make_response()
+    result = authomatic.login(
+       WerkzeugAdapter(request, response),
+       provider_name,
+       session=session,
+       session_saver=lambda: app.save_session(session, response)
+    )
+    # Assuming we got a result back process the response
+    if result:
+        if result.user:
+            result.user.update()
+            # Create a user. If the user already exists it simply return the _id
+            user = dataStore.createUser(**{
+                '_id': result.user.email,
+                'firstname': result.user.first_name,
+                'sources': [result.user.email]
+            })
+
+            session['firstname'] = result.user.first_name;
+            session['email'] = result.user.email;
+
+            session['provider_refresh_token'] = result.user.credentials.token
+            session['provider_name'] = result.provider.name
+            # check if the user already has a context_id
+            if 'context_id' in user:
+                session["context_id"] = user['context_id']
+                return redirect(url_for('inbox'))
+            else:
+                session["context_id"] = createContextAccount(**{
+                    'email': result.user.email,
+                    'first_name': result.user.first_name,
+                    'refresh_token': result.user.credentials.token
+                })
+                return redirect(url_for('inbox'))
+        else:
+            raise Exception('There was a problem getting your user info')
+    else:
+        return response
+
+@app.route('/inbox', methods=['GET'])
+def inbox():
+    return render_template('inbox.html')
+
+def createContextAccount(**args):
+    # check if the account exists
+    accounts = context_io.get_accounts(**{ 'email': args['email']})
+    if len(accounts) > 0:
+        return accounts[0].id
+
+    accountData = {
+        'email': args['email'],
+        'first_name': args['first_name']
+    }
+    discoveryObject = getServerSettings(context_io, args['email']);
+    account = context_io.post_account(**accountData)
+    sourceAdded = updateServerSettings(
+        accountObject=account,
+        email=args['email'],
+        provider_refresh_token=args['refresh_token'],
+        provider_consumer_key=CONFIG['google']['consumer_key'],
+        discoveryObject=discoveryObject)
+    account.post_sync()
+    dataStore.updateUser(args['email'], **{'context_id': account.id})
+    return account.id
 
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
@@ -40,12 +114,7 @@ def sendUserInfo():
     email = request.json["email"]
     password = request.json["password"]
 
-    # Check if the user exists
-    user = dataStore.getUser(email)
-    if user != None:
-        raise Exception('Account exists with the provided email')
-
-    user_id = dataStore.createUser(**{
+    user = dataStore.createUser(**{
         '_id': email,
         'firstname': firstName,
         'sources': [email]
@@ -63,7 +132,7 @@ def sendUserInfo():
         password=password,
         discoveryObject=discoveryObject)
     account.post_sync()
-    dataStore.updateUser(user_id, **{'context_id': account.id})
+    dataStore.updateUser(user['_id'], **{'context_id': account.id})
     return account.id
 
 def getServerSettings(contextioObject,email):
@@ -79,6 +148,24 @@ def updateServerSettings(accountObject, email, password, discoveryObject):
         "server": discoveryObject.imap["server"],
         "username": discoveryObject.imap["username"],
         "password": password,
+        "use_ssl": 1,
+        "port": discoveryObject.imap["port"],
+        "type": "IMAP"
+    }
+    print sourceData
+    itIsSuccessful = accountObject.post_source(**sourceData)
+    if itIsSuccessful != False:
+    	serverSettingIsUpdated = False
+    return serverSettingIsUpdated
+
+def updateServerSettings(accountObject, email, provider_refresh_token, provider_consumer_key, discoveryObject):
+    serverSettingIsUpdated = True
+    sourceData = {
+        "email": email,
+        "server": discoveryObject.imap["server"],
+        "username": discoveryObject.imap["username"],
+        "provider_refresh_token": provider_refresh_token,
+        "provider_consumer_key": provider_consumer_key,
         "use_ssl": 1,
         "port": discoveryObject.imap["port"],
         "type": "IMAP"

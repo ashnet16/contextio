@@ -102,4 +102,7 @@ $(document).ready(function() {
     }, logoutPhase1);
   });
 
+  $(document).on("click", "#googleLogin", function(e) {
+    window.location = '/login/google'
+  });
 });

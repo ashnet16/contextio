@@ -12,13 +12,18 @@ class DataStore:
 
     def getUser(self, id):
         users = self.db.users
-        user = users.find_one({'id': id })
+        user = users.find_one({'_id': id })
         return user
 
     def createUser(self, **user):
         users = self.db.users
+        # Check if the user exists
+        existingUser = self.getUser(user['_id'])
+        print existingUser
+        if existingUser != None:
+            return existingUser
         user_id = users.insert_one(user).inserted_id
-        return user_id
+        return user
 
     def updateUser(self, id, **user):
         users = self.db.users
