@@ -7,4 +7,8 @@
   {% if session['provider_name'] == 'google' %}
         Your are logged in with Google.<br />
   {% endif %}
+  <h2> Messages size {{ msgLen }} </h2>
+  {% for message in messages %}
+    <div><p>Message is {{ message.subject }}  </p></div>
+    {% endfor %}
 {% endblock body %}

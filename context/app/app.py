@@ -9,6 +9,9 @@ from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
 import contextio as c
 from data.datastore import DataStore
+from watson.personality import PersonalityInsightsService
+from watson.tone import ToneAnalyzerService
+
 dataStore = DataStore()
 #from pymongo import Connection
 #import json
@@ -83,7 +86,14 @@ def login(provider_name):
 
 @app.route('/inbox', methods=['GET'])
 def inbox():
-    return render_template('inbox.html')
+    userEmail = session["email"]
+    params = {
+        'id': session["context_id"]
+    }
+    account = c.Account(context_io, params)
+    messages = []
+    messages = account.get_messages(limit=2)
+    return render_template('inbox.html', msgLen=len(messages))
 
 def createContextAccount(**args):
     # check if the account exists
@@ -188,12 +198,6 @@ def updateServerSettings(accountObject, email, provider_refresh_token, provider_
    # connection.disconnect()
    #return json_projects
 
-from watson.personality import PersonalityInsightsService
-from watson.tone import ToneAnalyzerService
-
-# Create the Personality Insights Wrapper
-personalityInsights = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
-toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 
 @app.route('/tone', methods=['POST'])
 def tone():
