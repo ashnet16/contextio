@@ -26,8 +26,8 @@ DBS_NAME = 'nous'
 
 
 # contextio key and secret key
-CONSUMER_KEY = '9dowia6v'
-CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
+CONSUMER_KEY = 'l57sr7jp'
+CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
