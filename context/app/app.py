@@ -37,10 +37,20 @@ authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
 
 @app.route('/')
 def index():
-        return render_template('userLogin.html')
+    if 'credentials' in session:
+        credentials = authomatic.credentials(session["credentials"])
+        if credentials.valid == True:
+            return redirect(url_for('inbox'))
+    return render_template('userLogin.html')
 
 @app.route('/login/<provider_name>/', methods=['GET', 'POST'])
 def login(provider_name):
+    # check if their is a valid session already
+    if 'credentials' in session:
+        credentials = authomatic.credentials(session["credentials"])
+        print credentials.valid
+        if credentials.valid == True:
+            return redirect(url_for('inbox'))
     # Create an OAuth2 request for the provider
     response = make_response()
     result = authomatic.login(
@@ -65,6 +75,7 @@ def login(provider_name):
 
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
+            session['credentials'] = result.user.credentials.serialize()
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
@@ -81,9 +92,18 @@ def login(provider_name):
     else:
         return response
 
+@app.route('/logout', methods=["GET"])
+def logout():
+    session.clear();
+    return redirect(url_for('index'))
+
 @app.route('/inbox', methods=['GET'])
 def inbox():
-    return render_template('inbox.html')
+    if 'credentials' in session:
+        credentials = authomatic.credentials(session["credentials"])
+        if credentials.valid == True:
+            return render_template('inbox.html')
+    return redirect(url_for('index'))
 
 def createContextAccount(**args):
     # check if the account exists

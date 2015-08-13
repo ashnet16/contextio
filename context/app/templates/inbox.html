@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
-  <a href="/">Home</a>
+  <a href="/">Home</a>&nbsp;<a href="/logout">Logout</a>
   <h1>Hi {{ session['first_name'] }}</h1>
   <h2>Your Context id is: {{ session['context_id'] }}</h2>
   <h2>Your email is: {{ session['email'] }}</h2>
