@@ -1,0 +1,288 @@
+[
+  {
+    "trait": "openness",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "petrified",
+        "weight": -0.044157933,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "embarrassing",
+        "weight": -0.0618720558,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "nasty",
+        "weight": -0.064039618,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tough",
+        "weight": -0.251316811,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "set",
+        "weight": -0.306423116,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "conscientious",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "challenging",
+        "weight": 0.131471197,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "trying",
+        "weight": 0.129225522,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "ambitious",
+        "weight": 0.083484627,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "hard",
+        "weight": -0.198691213,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tough",
+        "weight": -0.263316811,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "confident",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "firm",
+        "weight": 0.28468937,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "negative_emotions",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "tough",
+        "weight": 0.293316811,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "awkward",
+        "weight": 0.185767358,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "embarrassing",
+        "weight": 0.1698720558,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tricky",
+        "weight": 0.110470582,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "nasty",
+        "weight": 0.106039618,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "agreeable",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "set",
+        "weight": 0.230743116,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "challenging",
+        "weight": 0.137471197,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tall",
+        "weight": 0.104541088,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "serious",
+        "weight": -0.126509165,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tough",
+        "weight": -0.257316811,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "angry",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "set",
+        "weight": 0.178963116,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "tricky",
+        "weight": 0.144470582,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "nasty",
+        "weight": 0.140039618,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "stale",
+        "weight": 0.038110019,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "tentative",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "tight",
+        "weight": 0.127973749,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "cheerfulness",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "challenging",
+        "weight": 0.203471197,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      },
+      {
+        "word": "delicate",
+        "weight": 0.123901538,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  },
+  {
+    "trait": "analytical",
+    "headword": "difficult",
+    "synonyms": [
+      {
+        "word": "set",
+        "weight": 0.212143116,
+        "hops": 0,
+        "semantic-type": "adj-all",
+        "meaning": "not easy",
+        "sense": "difficult"
+      }
+    ]
+  }
+]
