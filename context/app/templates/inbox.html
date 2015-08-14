@@ -7,4 +7,11 @@
   {% if session['provider_name'] == 'google' %}
         Your are logged in with Google.<br />
   {% endif %}
+  <h2> Messages and Tones</h2>
+  {% for m in msgs %}
+    <div><p>Message is {{ m }}  </p></div>
+  {% endfor %}
+  {% for t in tones %}
+    <div><p>Tone is {{ t }}  </p></div>
+  {% endfor %}
 {% endblock body %}

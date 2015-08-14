@@ -7,8 +7,17 @@ from flask import Flask, render_template, request, url_for, make_response, sessi
 from authomatic import Authomatic
 from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
+import logging
+from logging.handlers import RotatingFileHandler
+
+
 import contextio as c
 from data.datastore import DataStore
+from helpers.parser import Parser
+
+from watson.personality import PersonalityInsightsService
+from watson.tone import ToneAnalyzerService
+
 from passlib.hash import pbkdf2_sha256
 
 dataStore = DataStore()
@@ -23,8 +32,6 @@ app.secret_key = 'nous session key'
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
-#COLLECTION_NAME = 'projects'
-#FIELDS = {'school_state': True, 'resource_type': True, 'poverty_level': True, 'date_posted': True, 'total_donations': True, '_id': False}
 
 
 # contextio key and secret key
@@ -36,6 +43,8 @@ context_io = c.ContextIO(
    consumer_secret=CONSUMER_SECRET)
 
 authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
+parser = Parser()
+toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 
 @app.route('/')
 def index():
@@ -110,14 +119,28 @@ def logout():
 @app.route('/inbox', methods=['GET'])
 def inbox():
     if 'provider_name' in session:
-        if session['provider_name'] == 'local':
-            return render_template('inbox.html')
-        else:
+        if session['provider_name'] != 'local':
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
-                if credentials.valid == True:
-                    return render_template('inbox.html')
-    return redirect(url_for('index'))
+                if credentials.valid != True:
+                    return render_template('index.html')
+    userEmail = session["email"]
+    params = {
+        'id': session["context_id"]
+    }
+    account = c.Account(context_io, params)
+    mList = []
+    tList = []
+    messageResults = account.get_messages(folder="\Sent", limit=2, include_body=1, body_type="text/plain")
+    print messageResults
+    for mbody in messageResults:
+        for m in mbody.get_body(type='text/plain'):
+            data = parser.extractMessage(m['content'])
+            toneJson = toneAnalyzer.getTone(data.encode('utf-8'))
+            mList.append(data)
+            tList.append(json.dumps(toneJson))
+    #return render_template('inbox.html', messages=parser.retrieveAsText())
+    return render_template('inbox.html', msgs=mList, tones=tList)
 
 def createContextAccount(**args):
     # check if the account exists
@@ -235,24 +258,6 @@ def updateServerSettings(accountObject, email, provider_refresh_token, provider_
     	serverSettingIsUpdated = False
     return serverSettingIsUpdated
 
-#@app.route("/donorschoose/projects")
-#def donorschoose_projects():
-   # connection = Connection(MONGODB_HOST, MONGODB_PORT)
-   # collection = connection[DBS_NAME][COLLECTION_NAME]
-   #projects = collection.find(fields=FIELDS)
-   # json_projects = []
-   # for project in projects:
-       # json_projects.append(project)
-   # json_projects = json.dumps(json_projects, default=json_util.default)
-   # connection.disconnect()
-   #return json_projects
-
-from watson.personality import PersonalityInsightsService
-from watson.tone import ToneAnalyzerService
-
-# Create the Personality Insights Wrapper
-personalityInsights = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
-toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 
 @app.route('/personality', methods=['POST'])
 def personality():
