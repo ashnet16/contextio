@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% block body %}
   <a href="/">Home</a>
-  <h1>Hi {{ session['first_name'] }}</h1>
+  <h1>Hi {{ session['firstname'] }}</h1>
   <h2>Your Context id is: {{ session['context_id'] }}</h2>
   <h2>Your email is: {{ session['email'] }}</h2>
   {% if session['provider_name'] == 'google' %}
         Your are logged in with Google.<br />
   {% endif %}
-  <h2> Messages size {{ msgLen }} </h2>
-  {% for message in messages %}
-    <div><p>Message is {{ message.subject }}  </p></div>
-    {% endfor %}
+  <h2> Messages and Tones</h2>
+  {% for m in msgs %}
+    <div><p>Message is {{ m }}  </p></div>
+  {% endfor %}
+  {% for t in tones %}
+    <div><p>Tone is {{ t }}  </p></div>
+  {% endfor %}
 {% endblock body %}
