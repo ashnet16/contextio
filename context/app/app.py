@@ -119,13 +119,11 @@ def logout():
 @app.route('/inbox', methods=['GET'])
 def inbox():
     if 'provider_name' in session:
-        if session['provider_name'] == 'local':
-            return render_template('inbox.html')
-        else:
+        if session['provider_name'] != 'local':
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
-                if credentials.valid == True:
-                    return render_template('inbox.html')
+                if credentials.valid != True:
+                    return render_template('index.html')
     userEmail = session["email"]
     params = {
         'id': session["context_id"]
@@ -133,7 +131,8 @@ def inbox():
     account = c.Account(context_io, params)
     mList = []
     tList = []
-    messageResults = account.get_messages(folder="\Sent", limit=20, include_body=1, body_type="text/plain")
+    messageResults = account.get_messages(folder="\Sent", limit=2, include_body=1, body_type="text/plain")
+    print messageResults
     for mbody in messageResults:
         for m in mbody.get_body(type='text/plain'):
             data = parser.extractMessage(m['content'])
