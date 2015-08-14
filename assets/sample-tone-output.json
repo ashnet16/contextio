@@ -1,0 +1,333 @@
+{
+  "scorecard": "email",
+  "children": [
+    {
+      "children": [
+        {
+          "name": "Cheerfulness",
+          "word_count": 2,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.41332548305947,
+              "words": [
+                "challenges",
+                "improve"
+              ],
+              "word_count": 2,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0.0084076433121019,
+          "normalized_score": 0.41332548305947,
+          "id": "Cheerfulness"
+        },
+        {
+          "name": "Negative",
+          "word_count": 6,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 1,
+              "words": [
+                "missing",
+                "critical",
+                "inferior",
+                "difficult",
+                "disappointing",
+                "blame"
+              ],
+              "word_count": 6,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0.018917197452229,
+          "normalized_score": 1,
+          "id": "Negative"
+        },
+        {
+          "name": "Anger",
+          "word_count": 2,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 1,
+              "words": [
+                "critical",
+                "blame"
+              ],
+              "word_count": 2,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0.012738853503185,
+          "normalized_score": 1,
+          "id": "Anger"
+        }
+      ],
+      "name": "Emotion Tone",
+      "word_count": 8,
+      "id": "emotion_tone"
+    },
+    {
+      "children": [
+        {
+          "name": "Analytical",
+          "word_count": 9,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.82131262722437,
+              "words": [
+                "product",
+                "outcomes",
+                "but",
+                "acknowledge",
+                "insights",
+                "know"
+              ],
+              "word_count": 9,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0.018917197452229,
+          "normalized_score": 0.82131262722437,
+          "id": "Analytical"
+        },
+        {
+          "name": "Confident",
+          "word_count": 1,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.68928751296104,
+              "words": [
+                "fact"
+              ],
+              "word_count": 1,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0.0063694267515924,
+          "normalized_score": 0.68928751296104,
+          "id": "Confident"
+        },
+        {
+          "name": "Tentative",
+          "word_count": 0,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0,
+              "words": [
+
+              ],
+              "word_count": 0,
+              "correlation": "positive"
+            }
+          ],
+          "raw_score": 0,
+          "normalized_score": 0,
+          "id": "Tentative"
+        }
+      ],
+      "name": "Writing Tone",
+      "word_count": 10,
+      "id": "writing_tone"
+    },
+    {
+      "children": [
+        {
+          "name": "Openness",
+          "word_count": 113,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.64754831595911,
+              "words": [
+                "to",
+                "of",
+                "with",
+                "for",
+                "a",
+                "as",
+                "the",
+                "in",
+                "this",
+                "around",
+                "up",
+                "and"
+              ],
+              "word_count": 37,
+              "correlation": "positive"
+            },
+            {
+              "evidence_score": 0.0042050166167514,
+              "words": [
+                "need",
+                "they",
+                "acknowledge",
+                "but",
+                "have",
+                "no",
+                "inferior",
+                "hi",
+                "improve",
+                "difficult",
+                "been",
+                "has",
+                "disappointing",
+                "close",
+                "let's",
+                "missing",
+                "critical",
+                "are",
+                "quarters",
+                "can't",
+                "times",
+                "three",
+                "north-east",
+                "do",
+                "hungry",
+                "want",
+                "blame",
+                "turn",
+                "is",
+                "challenges",
+                "it",
+                "get",
+                "team",
+                "past",
+                "know",
+                "around",
+                "i",
+                "up",
+                "product",
+                "outcomes",
+                "fact",
+                "nothing",
+                "insights",
+                "their",
+                "our",
+                "we"
+              ],
+              "word_count": 78,
+              "correlation": "negative"
+            }
+          ],
+          "raw_score": -0.12057324840764,
+          "normalized_score": 0.007433305347772,
+          "id": "Openness_Big5"
+        },
+        {
+          "name": "Agreeableness",
+          "word_count": 65,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.9885433582519,
+              "words": [
+                "they",
+                "hi",
+                "improve",
+                "been",
+                "let's",
+                "close",
+                "quarters",
+                "times",
+                "three",
+                "north-east",
+                "hungry",
+                "blame",
+                "challenges",
+                "with",
+                "it",
+                "team",
+                "past",
+                "in",
+                "up",
+                "i",
+                "around",
+                "and",
+                "nothing",
+                "their",
+                "our",
+                "this",
+                "we"
+              ],
+              "word_count": 52,
+              "correlation": "positive"
+            },
+            {
+              "evidence_score": 0.0014681779427253,
+              "words": [
+                "product",
+                "missing",
+                "outcomes",
+                "critical",
+                "selling",
+                "quarters",
+                "inferior",
+                "economy",
+                "difficult",
+                "disappointing",
+                "blame"
+              ],
+              "word_count": 15,
+              "correlation": "negative"
+            }
+          ],
+          "raw_score": 0.098025477707006,
+          "normalized_score": 0.98236271920262,
+          "id": "Agreeableness_Big5"
+        },
+        {
+          "name": "Conscientiousness",
+          "word_count": 42,
+          "linguistic_evidence": [
+            {
+              "evidence_score": 0.39781141914048,
+              "words": [
+                "challenges",
+                "times",
+                "a",
+                "improve",
+                "the",
+                "past",
+                "up"
+              ],
+              "word_count": 16,
+              "correlation": "positive"
+            },
+            {
+              "evidence_score": 0.12501129647831,
+              "words": [
+                "need",
+                "challenges",
+                "but",
+                "acknowledge",
+                "no",
+                "inferior",
+                "difficult",
+                "know",
+                "disappointing",
+                "missing",
+                "product",
+                "critical",
+                "outcomes",
+                "fact",
+                "can't",
+                "nothing",
+                "insights",
+                "competitive",
+                "competitor",
+                "want",
+                "blame"
+              ],
+              "word_count": 27,
+              "correlation": "negative"
+            }
+          ],
+          "raw_score": -0.015987261146497,
+          "normalized_score": 0.1275523638374,
+          "id": "Conscientiousness_Big5"
+        }
+      ],
+      "name": "Social Tone",
+      "word_count": 119,
+      "id": "social_tone"
+    }
+  ]
+}

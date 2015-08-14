@@ -14,10 +14,11 @@ from logging.handlers import RotatingFileHandler
 import contextio as c
 from data.datastore import DataStore
 from helpers.parser import Parser
- 
+
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+from passlib.hash import pbkdf2_sha256
 
 dataStore = DataStore()
 #from pymongo import Connection
@@ -47,10 +48,28 @@ toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 
 @app.route('/')
 def index():
-        return render_template('userLogin.html')
+    if 'provider_name' in session:
+        if session['provider_name'] == 'local':
+            return render_template('inbox.html')
+        else:
+            if 'credentials' in session:
+                credentials = authomatic.credentials(session["credentials"])
+                if credentials.valid == True:
+                    return redirect(url_for('inbox'))
+    return render_template('userLogin.html')
 
 @app.route('/login/<provider_name>/', methods=['GET', 'POST'])
 def login(provider_name):
+    # check if their is a valid session already
+    if 'provider_name' in session:
+        if session['provider_name'] == 'local':
+            return render_template('inbox.html')
+        else:
+            if 'credentials' in session:
+                credentials = authomatic.credentials(session["credentials"])
+                print credentials.valid
+                if credentials.valid == True:
+                    return redirect(url_for('inbox'))
     # Create an OAuth2 request for the provider
     response = make_response()
     result = authomatic.login(
@@ -63,7 +82,7 @@ def login(provider_name):
     if result:
         if result.user:
             result.user.update()
-            # Create a user. If the user already exists it simply return the _id
+            # Create a user. If the user already exists it simply return the user
             user = dataStore.createUser(**{
                 '_id': result.user.email,
                 'firstname': result.user.first_name,
@@ -75,6 +94,7 @@ def login(provider_name):
 
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
+            session['credentials'] = result.user.credentials.serialize()
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
@@ -91,8 +111,21 @@ def login(provider_name):
     else:
         return response
 
+@app.route('/logout', methods=["GET"])
+def logout():
+    session.clear();
+    return redirect(url_for('index'))
+
 @app.route('/inbox', methods=['GET'])
 def inbox():
+    if 'provider_name' in session:
+        if session['provider_name'] == 'local':
+            return render_template('inbox.html')
+        else:
+            if 'credentials' in session:
+                credentials = authomatic.credentials(session["credentials"])
+                if credentials.valid == True:
+                    return render_template('inbox.html')
     userEmail = session["email"]
     params = {
         'id': session["context_id"]
@@ -138,27 +171,52 @@ def sendUserInfo():
     firstName = request.json["firstName"]
     email = request.json["email"]
     password = request.json["password"]
+    # Check if the user exists
+    user = dataStore.getUser(email);
+    if user != None:
+        # Compare password
+        if pbkdf2_sha256.verify(password, user["password"]) == True:
+            session["context_id"] = user["context_id"]
+        else:
+            raise Exception('Invalid account details!')
+    else:
+        user = dataStore.createUser(**{
+            '_id': email,
+            'firstname': firstName,
+            'sources': [email],
+            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16)
+        });
+        accountData = {
+            'email': email,
+            'first_name': firstName
+        }
+        account = context_io.post_account(**accountData)
+        dataStore.updateUser(user['_id'], **{'context_id': account.id})
+        session["context_id"] = account.id
+    session["provider_name"] = 'local'
+    session["email"] = user['_id']
+    session['firstname'] = user['firstname'];
+    return user['_id'];
 
-    user = dataStore.createUser(**{
-        '_id': email,
-        'firstname': firstName,
-        'sources': [email]
-    });
-    discoveryObject = getServerSettings(context_io, email);
-    print discoveryObject.found
-    accountData = {
+@app.route('/mailboxcallback', methods=["GET"])
+def mailboxCallback():
+    print request.args.get('contextio_token')
+    return redirect(url_for('inbox'))
+
+@app.route('/add-mailbox', methods=["GET", "POST"])
+def addMailbox():
+    if request.method == 'POST':
+        print url_for('mailboxCallback')
+        email = request.json["email"]
+        account = c.Account(context_io, { 'id': session["context_id"] })
+        result = account.post_connect_token(**{
+        "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
-        "first_name": firstName
-    }
-    account = context_io.post_account(**accountData)
-    sourceAdded = updateServerSettings(
-        accountObject=account,
-        email=email,
-        password=password,
-        discoveryObject=discoveryObject)
-    account.post_sync()
-    dataStore.updateUser(user['_id'], **{'context_id': account.id})
-    return account.id
+        "first_name": session["firstname"]
+        })
+        return json.dumps(result);
+    else:
+        return render_template('addMailbox.html')
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
@@ -166,7 +224,7 @@ def getServerSettings(contextioObject,email):
 	settingForEmail = contextioObject.get_discovery(**IMAPSettings)
 	return settingForEmail
 
-def updateServerSettings(accountObject, email, password, discoveryObject):
+def updateServerSettingsWithPassword(accountObject, email, password, discoveryObject):
     serverSettingIsUpdated = True
     sourceData = {
         "email": email,
@@ -202,6 +260,12 @@ def updateServerSettings(accountObject, email, provider_refresh_token, provider_
     return serverSettingIsUpdated
 
 
+@app.route('/personality', methods=['POST'])
+def personality():
+    data = request.form['text'];
+    personalityJson = personalityInsights.getProfile(data.encode('utf-8'))
+    return json.dumps(personalityJson)
+
 @app.route('/tone', methods=['POST'])
 def tone():
     data = request.form['text'];
@@ -215,5 +279,5 @@ def synonym():
     toneJson = toneAnalyzer.getSynonym(words, limit)
     return json.dumps(toneJson)
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)

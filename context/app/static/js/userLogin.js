@@ -22,7 +22,7 @@ $(document).ready(function() {
 
   function userInfoIsFilledOutProperly() {
     var result = false;
-    if ( ($("#name").val() != "") && ($("#email").val()!="") ) {
+    if ( ($("#password").val() != "") && ($("#email").val()!="") ) {
       result = true;
     }
     return result;
@@ -45,7 +45,7 @@ $(document).ready(function() {
         data: JSON.stringify(userInfo, null, '\t'),
         contentType: 'application/json;charset=UTF-8',
         success: function(response) {
-          console.log(response);
+          window.location = '/inbox'
         },
         error: function(error) {
           console.log(error);
