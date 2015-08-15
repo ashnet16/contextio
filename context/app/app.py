@@ -205,10 +205,9 @@ def mailboxCallback():
     print request.args.get('contextio_token')
     return redirect(url_for('inbox'))
 
-@app.route('/add-mailbox', methods=["GET", "POST"])
+@app.route('/add-mailbox', methods=["POST"])
 def addMailbox():
     if request.method == 'POST':
-        print url_for('mailboxCallback')
         email = request.json["email"]
         account = c.Account(context_io, { 'id': session["context_id"] })
         result = account.post_connect_token(**{
@@ -217,8 +216,21 @@ def addMailbox():
         "first_name": session["firstname"]
         })
         return json.dumps(result);
-    else:
-        return render_template('addMailbox.html')
+
+@app.route('/remove-mailbox', methods=["POST"])
+def removeMailbox():
+    if request.method == 'POST':
+        label = request.json["label"]
+        account = c.Account(context_io, { 'id': session["context_id"] })
+        source = c.Source(account, { 'label': label })
+        return json.dumps(source .delete());
+
+@app.route('/mailboxes', methods=["GET"])
+def mailboxes():
+    account = c.Account(context_io, { 'id': session["context_id"] })
+    sources = account.get_sources();
+    return render_template('mailboxes.html', sources=sources)
+
 
 # for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js 
 # and then displays contacts based on count * offset * 10

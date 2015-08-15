@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block body %}
+<script>
+$(document).ready(function() {
+  $(document).on("click", "#addSource", function(e) {
+    var email = $("#email").val();
+    var password = $("#password").val();
+    var userInfo = {
+      "email":email
+    };
+    $.ajax({
+       url: '/add-mailbox',
+       type: 'POST',
+       data: JSON.stringify(userInfo, null, '\t'),
+       contentType: 'application/json;charset=UTF-8',
+       success: function(response) {
+         var result = JSON.parse(response);
+         window.location = result.browser_redirect_url;
+       },
+       error: function(error) {
+         console.log(error);
+       }
+     });
+  });
+});
+
+function removeSource(label) {
+  var data = {
+    "label":label
+  };
+  $.ajax({
+     url: '/remove-mailbox',
+     type: 'POST',
+     data: JSON.stringify(data, null, '\t'),
+     contentType: 'application/json;charset=UTF-8',
+     success: function(response) {
+       var result = JSON.parse(response);
+       window.location = '/mailboxes';
+     },
+     error: function(error) {
+       console.log(error);
+     }
+   });
+};
+</script>
+  <a href="/">Home</a>&nbsp;<a href="/logout">Logout</a>
+  <h2> List of mailboxes </h2>
+  <table>
+    <thead><tr><td>Username</td><td>Status</td><td></td></tr></thead>
+  {% for source in sources %}
+    <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td>{{ source["label"] }}<a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></tr>
+  {% endfor %}
+</table>
+  <div>
+    <p>Enter the email address for the mailbox you would like to add</p>
+    <div>
+      <label>Email:</label><br/>
+      <input id="email" type="email" />
+    </div>
+    <button id="addSource" type="button">Add</button>
+  </div>
+{% endblock body %}
