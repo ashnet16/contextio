@@ -132,6 +132,9 @@ def inbox():
     mList = []
     tList = []
     messageResults = account.get_messages(folder="\Sent", limit=2, include_body=1, body_type="text/plain")
+    # Put it to 10 contacts to be displayed as the limit for now
+    numOfContacts = 10
+    contacts = account.get_contacts(limit = numOfContacts)
     print messageResults
     for mbody in messageResults:
         for m in mbody.get_body(type='text/plain'):
@@ -140,7 +143,7 @@ def inbox():
             mList.append(data)
             tList.append(json.dumps(toneJson))
     #return render_template('inbox.html', messages=parser.retrieveAsText())
-    return render_template('inbox.html', msgs=mList, tones=tList)
+    return render_template('inbox.html', msgs=mList, tones=tList, contactList=contacts)
 
 def createContextAccount(**args):
     # check if the account exists
@@ -216,6 +219,17 @@ def addMailbox():
         return json.dumps(result);
     else:
         return render_template('addMailbox.html')
+
+# for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js 
+# and then displays contacts based on count * offset * 10
+@app.route('/showMoreContacts')
+def showMoreContacts():
+    account = c.Account(context_io, { 'id': session["context_id"] })
+    numOfContacts = 30
+    contacts = account.get_contacts(limit=numOfContacts)
+    return render_template('moreContacts.html', contactList = contacts)
+
+
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
