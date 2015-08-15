@@ -225,8 +225,9 @@ def addMailbox():
 @app.route('/showMoreContacts')
 def showMoreContacts():
     account = c.Account(context_io, { 'id': session["context_id"] })
-    contacts = account.get_contacts
-    return
+    numOfContacts = 30
+    contacts = account.get_contacts(limit=numOfContacts)
+    return render_template('moreContacts.html', contactList = contacts)
 
 
 
