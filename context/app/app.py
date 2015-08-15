@@ -220,15 +220,14 @@ def addMailbox():
     else:
         return render_template('addMailbox.html')
 
-@app.route('/showContacts', methods=["GET"])
-def showContacts():
-    params = {
-        'id': session["context_id"]
-    }
-    account = c.Account(context_io, params)
-    numOfContacts = 20
-    contacts = account.get_contacts(**numOfContacts)
-    return contacts
+# for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js 
+# and then displays contacts based on count * offset * 10
+@app.route('/showMoreContacts')
+def showMoreContacts():
+    account = c.Account(context_io, { 'id': session["context_id"] })
+    contacts = account.get_contacts
+    return
+
 
 
 def getServerSettings(contextioObject,email):
