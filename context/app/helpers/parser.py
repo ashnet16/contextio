@@ -37,6 +37,7 @@ class Parser:
         return cleanMsg
 
     def getBig5(self, personality):
+        self.personality = []
         children = personality['tree']['children']['children']
         for child in children:
             self.personality[(child['id'])] = child['percentage']
@@ -44,12 +45,19 @@ class Parser:
            
 
     def analyzeMessages(self, msgs, **params):
+        rootJson = {}
+        rootJson['email'] = params['from_']
+        rootJson['numberOfEmails'] = len(msgs)
+        isContact = False
+        if params['type_'] == 'contact':
+            isContact = True 
         self.output = {}
-        getTone = params['tone']
         message = {} 
-        msgList = []
+        emailMessages = []
         msgContentList = []
         allContent = '\n'   
+        toneSum = 0
+        toneTracking = []
         for m in msgs:
             if m.get(include_body=1, body_type='text/plain') == False:
                 continue
@@ -61,18 +69,50 @@ class Parser:
                 content = self.extractMessage(mInfo['content'])
                 message['content'] = content
                 msgContentList.append(content)
-                message['tone'] = json.dumps(self.toneAnalyzer.getTone(content.encode('utf-8')))
+                toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
+                message['tone'] = json.dumps(toneJson)
+                toneAve = self.extractToneAverage(toneJson)
+                toneTracking.append(toneAve)
+                toneSum = toneSum + toneAve
+
                 # to do get average message
                 # aggregate message content
                 allContent = allContent + content
-            msgList.append(message)
-        if params['personality'] == True and len(allContent) > 4000:
+            emailMessages.append(message)
+        if len(allContent) > 4000 and params['personality'] == True:
             personalityJson = self.personalityAnalyzer.getProfile(allContent)
             getBig5(json.loads(personalityJson))
-        #getPersonInfo()
-        return msgContentList
+            rootJson['personality'] = self.personality
+        if params['type_'] == 'masterUser':
+            rootJson['emailMessages'] = emailMessages
+        if isContact:
+            rootJson['avgTone_msgsFromContact'] = toneSum / len(msgs)
+            rootJson['toneTracking_msgsFromContact'] = toneTracking[:5]
+        else:
+            rootJson['avgTone_msgsFromUser'] = toneSum / len(msgs)
+            rootJson['toneTracking_msgsFromUser'] = toneTracking[:5]
+        return rootJson
 
-    #def getPersonInfo(self)
+    def getRelationship(userScore, contactScore):
+        return (userScore + contactScore) / 2 
+
+    def extractToneAverage(self, tone):
+        """ Tone is the JSON from Watson Tone Analyzer """
+        toneSum = 0
+        toneStyles = tone['children']
+        for style in toneStyles:
+            if style['id'] == 'emotion_tone':
+                styleTypeInfo = style['id']['children']
+                for sInfo in styleTypeInfo:
+                    if sInfo['id'] == 'Cheefulness':
+                        toneSum = toneSum + sInfo['normalized_value']
+                    if sInfo['id'] == 'Negative':
+                        toneSum = toneSum - sInfo['normalized_value']
+                    if sInfo['id'] == 'Anger':
+                        toneSum = toneSum - sInfo['normalized_value']
+        return toneSum / 3
+
+
 
 
 
