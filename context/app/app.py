@@ -8,7 +8,7 @@ from authomatic import Authomatic
 from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
 import logging
-from logging.handlers import RotatingFileHandler
+
 
 
 import contextio as c
@@ -21,10 +21,22 @@ from watson.tone import ToneAnalyzerService
 from passlib.hash import pbkdf2_sha256
 
 dataStore = DataStore()
-#from pymongo import Connection
-#import json
-#from bson import json_util
-#from bson.json_util import dumps
+
+
+# Adding logging
+logger = logging.getLogger('Nous')
+logger.setLevel(logging.INFO)
+nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+nouslog.setFormatter(formatter)
+logger.addHandler(nouslog)
+
+
+
+logger.info('TEST')
+
+
+
 
 app = Flask(__name__)
 app.secret_key = 'nous session key'
@@ -32,6 +44,8 @@ app.secret_key = 'nous session key'
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
+
+
 
 
 # contextio key and secret key
