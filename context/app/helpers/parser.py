@@ -92,6 +92,7 @@ class Parser:
         for m in msgs:
             if m.get(include_body=1, body_type='text/plain') == False:
                 continue
+            message = {}
             message['datetime'] = m.date 
             message['subject'] = m.subject
             if params['type_'] != 'masterUser':
@@ -114,10 +115,14 @@ class Parser:
                 # aggregate message content
                 allContent = allContent + content
             emailMessages.append(message)
-        if len(allContent) > 4000 and params['personality'] == True:
+        if params['personality'] == True:
+            allContent = allContent.encode('utf-8')
             personalityJson = self.personalityAnalyzer.getProfile(allContent)
-            self.getBig5(personalityJson)
-            rootJson['personality'] = self.personality
+            if 'error' in personalityJson or u'error' in personalityJson:
+                rootJson['personality'] = {}
+            else:
+                self.getBig5(personalityJson)
+                rootJson['personality'] = self.personality
         if params['type_'] == 'masterUser':
             rootJson['emailMessages'] = emailMessages
         if isContact:
