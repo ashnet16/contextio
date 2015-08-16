@@ -58,7 +58,6 @@ context_io = c.ContextIO(
 
 authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
 parser = Parser()
-toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 
 @app.route('/')
 def index():
@@ -121,6 +120,7 @@ def login(provider_name):
                 })
                 return redirect(url_for('inbox'))
         else:
+            session.clear()
             raise Exception('There was a problem getting your user info')
     else:
         return response
@@ -143,21 +143,40 @@ def inbox():
         'id': session["context_id"]
     }
     account = c.Account(context_io, params)
+    # variables below are just for debugging
     mList = []
     tList = []
-    messageResults = account.get_messages(folder="\Sent", limit=2, include_body=1, body_type="text/plain")
+    #cList = []
     # Put it to 10 contacts to be displayed as the limit for now
     numOfContacts = 10
-    contacts = account.get_contacts(limit = numOfContacts)
-    print messageResults
-    for mbody in messageResults:
-        for m in mbody.get_body(type='text/plain'):
-            data = parser.extractMessage(m['content'])
-            toneJson = toneAnalyzer.getTone(data.encode('utf-8'))
-            mList.append(data)
-            tList.append(json.dumps(toneJson))
-    #return render_template('inbox.html', messages=parser.retrieveAsText())
-    return render_template('inbox.html', msgs=mList, tones=tList, contactList=contacts)
+    try:
+        getContacts(account.get_contacts(limit = numOfContacts))
+    except:
+        session.clear()
+        return render_template('error.html', errorMsg="Error Retrieving Contacts")
+    for contact in session['contacts']:
+        logger.info("contact %s", contact)
+        try:
+            userMsgs = account.get_messages(sender = userEmail, to=contact, limit=2, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contact, limit=2, include_body=1, body_type="text/plain")
+        except:
+            errMsg = sys.exc_info()[0]
+            session.clear()
+            return render_template ('error.html', errMsg = errMsg) 
+        if len(contactMsgs) > 0:
+            parser.analyzeMessages(contactMsgs, **{'from_': contact, 'to':userEmail, 'personality':True, 'tone': False})
+            #contactInfo = parser.createContactInfo(contact)
+            #cList.append(contactInfo)
+        if len(userMsgs) > 0: 
+            mList = parser.analyzeMessages(userMsgs, **{'from_':userEmail,'to': contact,'personality': True,'tone': True})
+        
+    return render_template('inbox.html', msgs=mList, contactList=session['contacts'])
+
+def getContacts(contacts):
+    contactList = []
+    for contact in contacts:
+        contactList.append(contact.email)
+    session['contacts'] = contactList
 
 def createContextAccount(**args):
     # check if the account exists
