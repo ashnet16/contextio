@@ -230,7 +230,19 @@ def showMoreContacts():
     account = c.Account(context_io, { 'id': session["context_id"] })
     numOfContacts = 30
     contacts = account.get_contacts(limit=numOfContacts)
-    return render_template('moreContacts.html', contactList = contacts)
+    contactList = []
+    for contactObj in contacts:
+        contactList.append(contactObj["matches"]["email"])
+    return render_template('moreContacts.html', listOfContacts = contactList)
+
+@app.route('/selectContact', methods=["GET"])
+def selectContact():
+    userAccount = c.Account(context_io, { 'id': session["context_id"] }) 
+    contactEmail = request.json["email"]
+    userSelectedContact = c.Contact(userAccount,contactEmail)
+    listOfContactEmails = userSelectedContact["emails"]
+    session['contact'] = listOfContactEmails
+    return 
 
 
 

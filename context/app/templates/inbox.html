@@ -10,8 +10,30 @@
   <h2>Your contacts</h2>
   <p> Currently displaying a list of 10 contacts</p>
   {% for contact in userContacts %}
-    <div><p class="selectContact">{{ contact }}</p></div>
+    <div><button class="selectContact">{{ contact }}</button></div>
   {% endfor %}
+    <script>
+      $(document).ready(function() {
+        $('.selectContact').click(function() {
+          var contactEmail = $(this).val();
+          var contactEmailObj = {
+            "email":contactEmail
+          };
+          $.ajax({
+           url: '/',
+           type: 'GET',
+           data: JSON.stringify(contactEmailObj, null, '\t'),
+           contentType: 'application/json;charset=UTF-8',
+           success: function(response) {
+            console.log(success)
+           },
+           error: function(error) {
+             console.log(error);
+           }
+         });
+        });
+      });
+    </script>
     <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
   <h2> Messages and Tones</h2>
   {% for m in msgs %}
