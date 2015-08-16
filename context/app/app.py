@@ -142,8 +142,11 @@ def inbox():
             toneJson = toneAnalyzer.getTone(data.encode('utf-8'))
             mList.append(data)
             tList.append(json.dumps(toneJson))
+    contactList = []
+    for contactObject in contacts:
+        contactList.append(contactObject["matches"]["count"])  
     #return render_template('inbox.html', messages=parser.retrieveAsText())
-    return render_template('inbox.html', msgs=mList, tones=tList, contactList=contacts)
+    return render_template('inbox.html', msgs=mList, tones=tList, userContacts=contactList)
 
 def createContextAccount(**args):
     # check if the account exists
