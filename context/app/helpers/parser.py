@@ -77,7 +77,7 @@ class Parser:
     def analyzeMessages(self, msgs, **params):
         rootJson = {}
         rootJson['email'] = params['from_']
-        logger.info('FROM %s', rootJson['email'])
+        #logger.info('FROM %s', rootJson['email'])
         rootJson['numberOfEmails'] = len(msgs)
         isContact = False
         if params['type_'] == 'contact':
@@ -98,14 +98,14 @@ class Parser:
             if params['type_'] != 'masterUser':
                 message['to'] = params['to']
             message['from'] = params['from_'] 
-            logger.info('msg %s', m.body)
+            #logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
                 message['content'] = content
-                logger.info('content %s', content)
+                #logger.info('content %s', content)
                 msgContentList.append(content)
                 toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
-                logger.info('tone %s', toneJson)
+                #logger.info('tone %s', toneJson)
                 message['tone'] = toneJson
                 toneAve = self.extractToneAverage(toneJson)
                 toneTracking.append(toneAve)
