@@ -1,9 +1,22 @@
 import json
 import re
 import os
+import logging
 
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
+
+# Adding logging
+logger = logging.getLogger('Nous')
+logger.setLevel(logging.INFO)
+nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+nouslog.setFormatter(formatter)
+logger.addHandler(nouslog)
+
+
+
+logger.info('In Parser')
  
 class Parser:
     """Takes in Message JSON object from API and returns requested attributes"""
@@ -36,17 +49,35 @@ class Parser:
             cleanMsg = msg
         return cleanMsg
 
+    def byteify(input):
+        if isinstance(input, dict):
+            return {byteify(key):byteify(value) for key,value in input.iteritems()}
+        elif isinstance(input, list):
+            return [byteify(element) for element in input]
+        elif isinstance(input, unicode):
+            return input.encode('utf-8')
+        else:
+            return input
+
+
     def getBig5(self, personality):
         self.personality = []
-        children = personality['tree']['children']['children']
-        for child in children:
-            self.personality[(child['id'])] = child['percentage']
+        level1 = personality['tree']
+        level2 = level1['children']
+        level3 = level2[0]['children']
+        level4 = level3[0]
+        level5 = level4['children']
+        self.personality = {}
+        for child in level5:
+            name = child['name']
+            self.personality[str(name)] = child['percentage']
         return
            
 
     def analyzeMessages(self, msgs, **params):
         rootJson = {}
         rootJson['email'] = params['from_']
+        logger.info('FROM %s', rootJson['email'])
         rootJson['numberOfEmails'] = len(msgs)
         isContact = False
         if params['type_'] == 'contact':
@@ -63,14 +94,18 @@ class Parser:
                 continue
             message['datetime'] = m.date 
             message['subject'] = m.subject
-            message['to'] = params['to']
+            if params['type_'] != 'masterUser':
+                message['to'] = params['to']
             message['from'] = params['from_'] 
+            logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
                 message['content'] = content
+                logger.info('content %s', content)
                 msgContentList.append(content)
                 toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
-                message['tone'] = json.dumps(toneJson)
+                logger.info('tone %s', toneJson)
+                message['tone'] = toneJson
                 toneAve = self.extractToneAverage(toneJson)
                 toneTracking.append(toneAve)
                 toneSum = toneSum + toneAve
@@ -81,7 +116,7 @@ class Parser:
             emailMessages.append(message)
         if len(allContent) > 4000 and params['personality'] == True:
             personalityJson = self.personalityAnalyzer.getProfile(allContent)
-            getBig5(json.loads(personalityJson))
+            self.getBig5(personalityJson)
             rootJson['personality'] = self.personality
         if params['type_'] == 'masterUser':
             rootJson['emailMessages'] = emailMessages
@@ -89,11 +124,14 @@ class Parser:
             rootJson['avgTone_msgsFromContact'] = toneSum / len(msgs)
             rootJson['toneTracking_msgsFromContact'] = toneTracking[:5]
         else:
-            rootJson['avgTone_msgsFromUser'] = toneSum / len(msgs)
+            if len(msgs) > 0:
+                rootJson['avgTone_msgsFromUser'] = toneSum / len(msgs)
+            else:
+                rootJson['avgTone_msgsFromUser'] = 0
             rootJson['toneTracking_msgsFromUser'] = toneTracking[:5]
         return rootJson
 
-    def getRelationship(userScore, contactScore):
+    def getRelationship(self, userScore, contactScore):
         return (userScore + contactScore) / 2 
 
     def extractToneAverage(self, tone):
@@ -102,14 +140,14 @@ class Parser:
         toneStyles = tone['children']
         for style in toneStyles:
             if style['id'] == 'emotion_tone':
-                styleTypeInfo = style['id']['children']
+                styleTypeInfo = style['children']
                 for sInfo in styleTypeInfo:
-                    if sInfo['id'] == 'Cheefulness':
-                        toneSum = toneSum + sInfo['normalized_value']
-                    if sInfo['id'] == 'Negative':
-                        toneSum = toneSum - sInfo['normalized_value']
-                    if sInfo['id'] == 'Anger':
-                        toneSum = toneSum - sInfo['normalized_value']
+                    if sInfo['name'] == 'Cheefulness':
+                        toneSum = toneSum + float(sInfo['raw_score'])
+                    if sInfo['name'] == 'Negative':
+                        toneSum = toneSum - float(sInfo['raw_score'])
+                    if sInfo['name'] == 'Anger':
+                        toneSum = toneSum - float(sInfo['raw_score'])
         return toneSum / 3
 
 
