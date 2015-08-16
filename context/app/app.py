@@ -169,7 +169,7 @@ def inbox():
             session.clear()
             return render_template ('error.html', errMsg = errMsg) 
         if len(contactMsgs) > 0:
-            contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact, 'to':userEmail, 'personality':True})
+            contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact, 'to': userEmail, 'personality':True})
             contactRootJsonList.append(contactRootJson)
             contactAvgTone = contactRootJson['avgTone_msgsFromContact']
         if len(userMsgs) > 0: 
@@ -177,10 +177,10 @@ def inbox():
             totalUserMsgs = userMsgs + totalUserMsgs
             singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
         if contactAvgTone != 0 and singleUserAvgTone != 0:
-            userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAveTone)
-    userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail,'to': contact, 'personality': True,'tone': True})
+            userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
+    userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
     userRootJson['contacts'] = contactRootJsonList
-    return render_template('inbox.html', msgs=mList, contactList=session['contacts'])
+    return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(userRootJson))
 
 def getContacts(contacts):
     contactList = []
