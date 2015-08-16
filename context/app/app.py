@@ -146,6 +146,7 @@ def inbox():
     # variables below are just for debugging
     mList = []
     tList = []
+    totalUserMsgs = []
     #cList = []
     # Put it to 10 contacts to be displayed as the limit for now
     numOfContacts = 10
@@ -154,9 +155,13 @@ def inbox():
     except:
         session.clear()
         return render_template('error.html', errorMsg="Error Retrieving Contacts")
+    contactRootJsonList = []
     for contact in session['contacts']:
         logger.info("contact %s", contact)
+        contactAvgTone = 0
+        singleUserAvgTone = 0
         try:
+            # we need to get user<->contact messages first
             userMsgs = account.get_messages(sender = userEmail, to=contact, limit=2, include_body=1, body_type="text/plain")
             contactMsgs = account.get_messages(sender = contact, limit=2, include_body=1, body_type="text/plain")
         except:
@@ -164,12 +169,17 @@ def inbox():
             session.clear()
             return render_template ('error.html', errMsg = errMsg) 
         if len(contactMsgs) > 0:
-            parser.analyzeMessages(contactMsgs, **{'from_': contact, 'to':userEmail, 'personality':True, 'tone': False})
-            #contactInfo = parser.createContactInfo(contact)
-            #cList.append(contactInfo)
+            contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact, 'to':userEmail, 'personality':True})
+            contactRootJsonList.append(contactRootJson)
+            contactAvgTone = contactRootJson['avgTone_msgsFromContact']
         if len(userMsgs) > 0: 
-            mList = parser.analyzeMessages(userMsgs, **{'from_':userEmail,'to': contact,'personality': True,'tone': True})
-        
+            userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact, 'to':userEmail, 'personality':False})
+            totalUserMsgs = userMsgs + totalUserMsgs
+            singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
+        if contactAvgTone != 0 and singleUserAvgTone != 0:
+            userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAveTone)
+    userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail,'to': contact, 'personality': True,'tone': True})
+    userRootJson['contacts'] = contactRootJsonList
     return render_template('inbox.html', msgs=mList, contactList=session['contacts'])
 
 def getContacts(contacts):
