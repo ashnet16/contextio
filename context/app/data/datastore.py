@@ -29,3 +29,13 @@ class DataStore:
         users = self.db.users
         result = users.update_one({ '_id': id }, { '$set': user })
         return result == 1
+
+    def saveMessages(self, *messages):
+        messagesCollection = self.db.messages
+        result = messagesCollection.insert_many(messages)
+        return len(result.inserted_ids) == len(messages)
+
+    def saveMessage(self, **message):
+        messagesCollection = self.db.messages
+        result = messagesCollection.insert_one(message).inserted_id
+        return message
