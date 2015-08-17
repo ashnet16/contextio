@@ -42,9 +42,6 @@ DBS_NAME = 'nous'
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
-#CONSUMER_KEY = '9dowia6v'
-#CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
-
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -142,7 +139,9 @@ def login(provider_name):
                 'firstname': result.user.first_name,
                 'sources': [result.user.email],
                 'contacts': [],
-                'pending_sync': True
+                'pending_sync': True,
+                'pending_contacts': False,
+                'pending_analysis': False
             })
 
             session['firstname'] = result.user.first_name;
@@ -181,13 +180,25 @@ def inbox():
                 credentials = authomatic.credentials(session["credentials"])
                 if credentials.valid != True:
                     return render_template('userLogin.html')
-    print session["email"]
     userEmail = session["email"]
     user = dataStore.getUser(userEmail)
     params = {
         'id': user["context_id"]
     }
     account = c.Account(context_io, params)
+    # The following is a hack to get around limitation with callbacks to localhost
+    if(user['pending_sync'] and 'localhost' in url_for('inbox', _external=True)):
+        sources = account.get_sources()
+        isOkay = True
+        for source in sources:
+            if(source.status != 'OK'):
+                isOkay = False
+        if(isOkay):
+            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
+            user['pending_contacts'] = True
+            user['pending_sync'] = False
+    # End of localhost hack
+
     try:
         getContacts(account.get_contacts(limit = 1))
     except:
@@ -394,6 +405,24 @@ def synonym():
     limit = request.form['limit'];
     toneJson = toneAnalyzer.getSynonym(words, limit)
     return json.dumps(toneJson)
+
+# Returns the personality given a email address { email: anEmailAddress }
+@app.route('/get-personality', methods=['POST'])
+def getPersonality():
+    email = request.form['email'];
+    # Get personality from the mongodb where the _id = email
+
+# Returns the messages sent to an email address. Expects { email: anEmailAddress }
+@app.route('/get-received-messages', methods=['POST'])
+def getReceivedMessages():
+    email = request.form['email'];
+    # Get messages from the mongodb where the to = email
+
+# Returns the message sent from an email address. Expects { email: anEmailAddress }
+@app.route('/get-sent-messages', methods=['POST'])
+def getSentMessages():
+    email = request.form['email'];
+    # Get messages from the mongodb where the from = email
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)
