@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, url_for, make_response, sessi
 from authomatic import Authomatic
 from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
+import multiprocessing
 import logging
 
 import contextio as c
@@ -29,12 +30,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 nouslog.setFormatter(formatter)
 logger.addHandler(nouslog)
 
-
-
 logger.info('TEST')
-
-
-
 
 app = Flask(__name__)
 app.secret_key = 'nous session key'
@@ -43,33 +39,9 @@ MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
 
-from celery import Celery
-
-def make_celery(app):
-    celery = Celery(app.import_name, broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update(app.config)
-    TaskBase = celery.Task
-    class ContextTask(TaskBase):
-        abstract = True
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
-    celery.Task = ContextTask
-    return celery
-
-app.config.update(
-    CELERY_BROKER_URL='redis://localhost:6379',
-    CELERY_RESULT_BACKEND='redis://localhost:6379'
-)
-
-celery = make_celery(app)
-
 # contextio key and secret key
-#CONSUMER_KEY = 'l57sr7jp'
-#CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
-CONSUMER_KEY = '9dowia6v'
-CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
-
+CONSUMER_KEY = 'l57sr7jp'
+CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -78,7 +50,6 @@ context_io = c.ContextIO(
 authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
 parser = Parser()
 
-@celery.task(name="tasks.runAnalysis")
 def runAnalysis(userEmail):
     user = dataStore.getUser(userEmail)
     params = {
@@ -118,6 +89,7 @@ def runAnalysis(userEmail):
             userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
     userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
     userRootJson['contacts'] = contactRootJsonList
+    dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
     return userRootJson
 
@@ -204,6 +176,15 @@ def inbox():
                     return render_template('index.html')
     userEmail = session["email"]
     user = dataStore.getUser(userEmail)
+    params = {
+        'id': user["context_id"]
+    }
+    account = c.Account(context_io, params)
+    try:
+        getContacts(account.get_contacts(limit = 1))
+    except:
+        session.clear()
+        return render_template('error.html', errorMsg="Error Retrieving Contacts")
     if(user['pending_sync']):
         return render_template('inbox.html', contactList=[], jsonOut = json.dumps({}), user=user)
     elif(user['pending_contacts']):
@@ -212,55 +193,14 @@ def inbox():
         return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps({}), user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(userRootJson), user=user)
+        return render_template('inbox.html', contactList=user['contacts'], jsonOut = json.dumps({}), user=user)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
     dataStore.updateUser(session["email"], **{ 'pending_analysis': True, 'pending_contacts': False })
-    result = runAnalysis.AsyncResult(session["email"])
+    p = multiprocessing.Process(target=runAnalysis, args=(session['email'],))
+    p.start()
     return json.dumps({ 'message': 'Running analysis'})
-
-def doAnalysis():
-    params = {
-        'id': session["context_id"]
-    }
-    account = c.Account(context_io, params)
-    # variables below are just for debugging
-    mList = []
-    tList = []
-    totalUserMsgs = []
-    #cList = []
-    # Put it to 10 contacts to be displayed as the limit for now
-    numOfContacts = 1
-    userEmail = session["email"]
-    user = dataStore.getUser(userEmail)
-    contacts = user['contacts']
-    contactRootJsonList = []
-    for contact in contacts:
-        logger.info("contact %s", contact)
-        contactAvgTone = 0
-        singleUserAvgTone = 0
-        try:
-            # we need to get user<->contact messages first
-            userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=2, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contact['emails'][0], limit=2, include_body=1, body_type="text/plain")
-        except:
-            errMsg = sys.exc_info()[0]
-            session.clear()
-            return render_template ('error.html', errMsg = errMsg)
-        if len(contactMsgs) > 0:
-            contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact['emails'][0], 'to': userEmail, 'personality':True})
-            contactRootJsonList.append(contactRootJson)
-            contactAvgTone = contactRootJson['avgTone_msgsFromContact']
-        if len(userMsgs) > 0:
-            userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact['emails'][0], 'to':userEmail, 'personality':False})
-            totalUserMsgs = userMsgs + totalUserMsgs
-            singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
-        if contactAvgTone != 0 and singleUserAvgTone != 0:
-            userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
-    userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
-    userRootJson['contacts'] = contactRootJsonList
-    return json.dumps(userRootJson)
 
 def getContacts(contacts):
     contactList = []
@@ -381,8 +321,8 @@ def selectContact():
     userSelectedContact = c.Contact(userAccount,{'email':contactEmail})
     userSelectedContact.get()
     user = dataStore.getUser(session['email'])
-    dataStore.addUserContact(user['_id'],  ** { 'name': userSelectedContact.name, 'emails': contactEmail })
-    return
+    dataStore.addUserContact(user['_id'],  ** { 'name': userSelectedContact.name, 'emails': [contactEmail] })
+    return json.dumps({ 'message': 'Contact added' })
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
