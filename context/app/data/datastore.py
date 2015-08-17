@@ -15,6 +15,11 @@ class DataStore:
         user = users.find_one({'_id': id })
         return user
 
+    def getUserByContextId(self, context_id):
+        users = self.db.users
+        user = users.find_one({'context_id': context_id })
+        return user
+
     def createUser(self, **user):
         users = self.db.users
         # Check if the user exists
@@ -39,3 +44,13 @@ class DataStore:
         messagesCollection = self.db.messages
         result = messagesCollection.insert_one(message).inserted_id
         return message
+
+    def savePersonality(self, **personality):
+        personalityCollection = self.db.personality
+        result = personalityCollection.insert_one(personality)
+        return personality
+
+    def saveMessages(self, *personalities):
+        personalityCollection = self.db.personality
+        result = messagesCollection.insert_many(personalities)
+        return len(result.inserted_ids) == len(personalities)

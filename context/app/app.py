@@ -49,8 +49,11 @@ DBS_NAME = 'nous'
 
 
 # contextio key and secret key
-CONSUMER_KEY = 'l57sr7jp'
-CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+#CONSUMER_KEY = 'l57sr7jp'
+#CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+CONSUMER_KEY = '9dowia6v'
+CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
+
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -99,7 +102,9 @@ def login(provider_name):
             user = dataStore.createUser(**{
                 '_id': result.user.email,
                 'firstname': result.user.first_name,
-                'sources': [result.user.email]
+                'sources': [result.user.email],
+                'contacts': [],
+                'pending_sync': True
             })
 
             session['firstname'] = result.user.first_name;
@@ -139,6 +144,9 @@ def inbox():
                 if credentials.valid != True:
                     return render_template('index.html')
     userEmail = session["email"]
+    user = dataStore.getUser(userEmail)
+    if(user['pending_sync']):
+        return render_template('inbox.html', contactList=[], jsonOut = json.dumps({}), user=user)
     params = {
         'id': session["context_id"]
     }
@@ -149,12 +157,14 @@ def inbox():
     totalUserMsgs = []
     #cList = []
     # Put it to 10 contacts to be displayed as the limit for now
-    numOfContacts = 10
+    numOfContacts = 1
     try:
         getContacts(account.get_contacts(limit = numOfContacts))
     except:
         session.clear()
         return render_template('error.html', errorMsg="Error Retrieving Contacts")
+    if(user['pending_contacts']):
+        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps({}), user=user)
     contactRootJsonList = []
     for contact in session['contacts']:
         logger.info("contact %s", contact)
@@ -167,12 +177,12 @@ def inbox():
         except:
             errMsg = sys.exc_info()[0]
             session.clear()
-            return render_template ('error.html', errMsg = errMsg) 
+            return render_template ('error.html', errMsg = errMsg)
         if len(contactMsgs) > 0:
             contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact, 'to': userEmail, 'personality':True})
             contactRootJsonList.append(contactRootJson)
             contactAvgTone = contactRootJson['avgTone_msgsFromContact']
-        if len(userMsgs) > 0: 
+        if len(userMsgs) > 0:
             userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact, 'to':userEmail, 'personality':False})
             totalUserMsgs = userMsgs + totalUserMsgs
             singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
@@ -180,7 +190,7 @@ def inbox():
             userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
     userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
     userRootJson['contacts'] = contactRootJsonList
-    return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(userRootJson))
+    return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(userRootJson), user=user)
 
 def getContacts(contacts):
     contactList = []
@@ -198,6 +208,7 @@ def createContextAccount(**args):
         'email': args['email'],
         'first_name': args['first_name']
     }
+    print accountData
     discoveryObject = getServerSettings(context_io, args['email']);
     account = context_io.post_account(**accountData)
     sourceAdded = updateServerSettings(
@@ -206,10 +217,16 @@ def createContextAccount(**args):
         provider_refresh_token=args['refresh_token'],
         provider_consumer_key=CONFIG['google']['consumer_key'],
         discoveryObject=discoveryObject)
-    account.post_sync()
+    #account.post_sync()
     dataStore.updateUser(args['email'], **{'context_id': account.id})
     return account.id
 
+@app.route('/mailbox-sync-callback', methods=['POST'])
+def mailboxSyncCallback():
+    accountId = request.json['account_id']
+    user = dataStore.getUserByContextId(accountId)
+    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
+    return 'OK'
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
 def sendUserInfo():
@@ -275,7 +292,7 @@ def mailboxes():
     return render_template('mailboxes.html', sources=sources)
 
 
-# for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js 
+# for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js
 # and then displays contacts based on count * offset * 10
 @app.route('/showMoreContacts')
 def showMoreContacts():
@@ -301,7 +318,8 @@ def updateServerSettingsWithPassword(accountObject, email, password, discoveryOb
         "password": password,
         "use_ssl": 1,
         "port": discoveryObject.imap["port"],
-        "type": "IMAP"
+        "type": "IMAP",
+        'callback_url': url_for('mailboxSyncCallback', _external=True)
     }
     print sourceData
     itIsSuccessful = accountObject.post_source(**sourceData)
@@ -319,7 +337,8 @@ def updateServerSettings(accountObject, email, provider_refresh_token, provider_
         "provider_consumer_key": provider_consumer_key,
         "use_ssl": 1,
         "port": discoveryObject.imap["port"],
-        "type": "IMAP"
+        "type": "IMAP",
+        'callback_url': url_for('mailboxSyncCallback', _external=True)
     }
     print sourceData
     itIsSuccessful = accountObject.post_source(**sourceData)

@@ -7,18 +7,26 @@
   {% if session['provider_name'] == 'google' %}
         Your are logged in with Google.<br />
   {% endif %}
-  <h2>Your contacts</h2>
-  <p> Currently displaying a list of 10 contacts</p>
-  {% for contact in contactList %}
-    <div><p>{{ contact }}</p></div>
-  {% endfor %}
-    <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
-  <h2> Messages and Tones</h2>
-  <p> {{ jsonOut }}
-  {% for m in msgs %}
-    <div><p>Message is {{ m }}  </p></div>
-  {% endfor %}
-  {% for t in tones %}
-    <div><p>Tone is {{ t }}  </p></div>
-  {% endfor %}
+  {% if(user.pending_sync) %}
+    <p>Your mailbox is currently being processed. Your screen will refresh once complete</p>
+  {% elif(user.pending_contacts) %}
+    <h2>Your contacts</h2>
+    <p>To allow us to analyze your mailbox effectively you need to select one or more contact to include</p>
+    <p> Currently displaying a list of 10 contacts</p>
+    {% for contact in contactList %}
+      <div><p>{{ contact }}</p></div>
+    {% endfor %}
+      <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
+    <h2> Messages and Tones</h2>
+    <p> {{ jsonOut }}
+    {% for m in msgs %}
+      <div><p>Message is {{ m }}  </p></div>
+    {% endfor %}
+    {% for t in tones %}
+      <div><p>Tone is {{ t }}  </p></div>
+    {% endfor %}
+  {% elif(user.pending_analysis) %}
+    <p>Our cognitive minions are currently analysing you mailbox. Your screen will resfesh once complete</p>
+  {% endif %}
+
 {% endblock body %}
