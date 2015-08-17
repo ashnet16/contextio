@@ -42,6 +42,9 @@ DBS_NAME = 'nous'
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+#CONSUMER_KEY = '9dowia6v'
+#CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
+
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -84,7 +87,7 @@ def runAnalysis(userEmail):
             dataStore.savePersonality(**{ '_id': contactRootJson['email'], 'personality': contactRootJson['personality']})
             dataStore.saveMessages(contactRootJson['emailMessages'])
         if len(userMsgs) > 0:
-            userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact['emails'][0], 'to':userEmail, 'personality':False})
+            userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': userEmail, 'to':contact['emails'][0], 'personality':False})
             totalUserMsgs = userMsgs + totalUserMsgs
             singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
             dataStore.saveMessages(userRootJson['emailMessages'])
