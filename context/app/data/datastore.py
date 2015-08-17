@@ -35,6 +35,11 @@ class DataStore:
         result = users.update_one({ '_id': id }, { '$set': user })
         return result == 1
 
+    def addUserContact(self, id, **contact):
+        users = self.db.users
+        result = users.update_one({ '_id': id }, { '$push': { 'contacts': contact } })
+        return result == 1
+
     def saveMessages(self, *messages):
         messagesCollection = self.db.messages
         result = messagesCollection.insert_many(messages)
