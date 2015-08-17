@@ -40,7 +40,7 @@ class DataStore:
         result = users.update_one({ '_id': id }, { '$push': { 'contacts': contact } })
         return result == 1
 
-    def saveMessages(self, *messages):
+    def saveMessages(self, messages):
         messagesCollection = self.db.messages
         result = messagesCollection.insert_many(messages)
         return len(result.inserted_ids) == len(messages)
@@ -55,7 +55,7 @@ class DataStore:
         result = personalityCollection.insert_one(personality)
         return personality
 
-    def saveMessages(self, *personalities):
+    def savePersonalities(self, *personalities):
         personalityCollection = self.db.personality
         result = messagesCollection.insert_many(personalities)
         return len(result.inserted_ids) == len(personalities)

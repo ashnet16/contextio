@@ -40,8 +40,11 @@ MONGODB_PORT = 27017
 DBS_NAME = 'nous'
 
 # contextio key and secret key
-CONSUMER_KEY = 'l57sr7jp'
-CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+#CONSUMER_KEY = 'l57sr7jp'
+#CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+CONSUMER_KEY = '9dowia6v'
+CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
+
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -85,6 +88,8 @@ def runAnalysis(userEmail):
             userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact['emails'][0], 'to':userEmail, 'personality':False})
             totalUserMsgs = userMsgs + totalUserMsgs
             singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
+            print userRootJson['emailMessages']
+            dataStore.saveMessages(userRootJson['emailMessages'])
         if contactAvgTone != 0 and singleUserAvgTone != 0:
             userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
     userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
@@ -173,7 +178,8 @@ def inbox():
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
                 if credentials.valid != True:
-                    return render_template('index.html')
+                    return render_template('userLogin.html')
+    print session["email"]
     userEmail = session["email"]
     user = dataStore.getUser(userEmail)
     params = {

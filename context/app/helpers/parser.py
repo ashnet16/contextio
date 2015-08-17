@@ -17,7 +17,7 @@ logger.addHandler(nouslog)
 
 
 logger.info('In Parser')
- 
+
 class Parser:
     """Takes in Message JSON object from API and returns requested attributes"""
 
@@ -25,17 +25,17 @@ class Parser:
         # NB This was only tested in GMAIL, we don't know if the thread msg header format is uniform
         # NB Have to extend pattern to include support for foreign language
         #threadHeaderRegExp = re.compile(r'On\s(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s[A-Z]?[a-z]{2,3}\s[0-9]{1,2},\s[0-9]{4}\sat\s[0-9]{1,2}:[0-9]{2}\s(?:AM|PM),\s[^<]+<[^@]+@[^>]+>\swrote:')
-        self.threadHeaderRegExp = re.compile(r'On\s(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s[A-Z]?[a-z]{2,3}\s[0-9]{1,2},\s[0-9]{4}\sat\s[0-9]{1,2}:[0-9]{2}\s(?:AM|PM),\s[^<]+<[^@]+@[^>]+>\swrote:')                    
-       
+        self.threadHeaderRegExp = re.compile(r'On\s(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s[A-Z]?[a-z]{2,3}\s[0-9]{1,2},\s[0-9]{4}\sat\s[0-9]{1,2}:[0-9]{2}\s(?:AM|PM),\s[^<]+<[^@]+@[^>]+>\swrote:')
+
         self.toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
         self.personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
 
         self.output = {} # dictionary so we can convert to JSON
         self.personality = {} # store specific personality traits and score
-        
+
     def extractMessage(self, msg):
         """Helper function for getMsgBodyList to get only the FIRST message in thread"""
-        """NB we don't need other messages because they have their own message id"""   
+        """NB we don't need other messages because they have their own message id"""
         iterator = self.threadHeaderRegExp.finditer(msg)
         offset = -1
         cleanMsg = ''
@@ -72,7 +72,7 @@ class Parser:
             name = child['name']
             self.personality[str(name)] = child['percentage']
         return
-           
+
 
     def analyzeMessages(self, msgs, **params):
         rootJson = {}
@@ -81,23 +81,24 @@ class Parser:
         rootJson['numberOfEmails'] = len(msgs)
         isContact = False
         if params['type_'] == 'contact':
-            isContact = True 
+            isContact = True
         self.output = {}
-        message = {} 
+        message = {}
         emailMessages = []
         msgContentList = []
-        allContent = '\n'   
+        allContent = '\n'
         toneSum = 0
         toneTracking = []
         for m in msgs:
             if m.get(include_body=1, body_type='text/plain') == False:
                 continue
             message = {}
-            message['datetime'] = m.date 
+            message['datetime'] = m.date
             message['subject'] = m.subject
             if params['type_'] != 'masterUser':
                 message['to'] = params['to']
-            message['from'] = params['from_'] 
+            message['from'] = params['from_']
+            message['_id'] = m.message_id
             #logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
@@ -134,10 +135,11 @@ class Parser:
             else:
                 rootJson['avgTone_msgsFromUser'] = 0
             rootJson['toneTracking_msgsFromUser'] = toneTracking[:5]
+            rootJson['emailMessages'] = emailMessages
         return rootJson
 
     def getRelationship(self, userScore, contactScore):
-        return (userScore + contactScore) / 2 
+        return (userScore + contactScore) / 2
 
     def extractToneAverage(self, tone):
         """ Tone is the JSON from Watson Tone Analyzer """
@@ -154,9 +156,3 @@ class Parser:
                     if sInfo['name'] == 'Anger':
                         toneSum = toneSum - float(sInfo['raw_score'])
         return toneSum / 3
-
-
-
-
-
-
