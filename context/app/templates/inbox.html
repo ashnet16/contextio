@@ -1,5 +1,39 @@
 {% extends "base.html" %}
 {% block body %}
+  <script>
+  function doAnalysis() {
+      $.ajax({
+       url: '/do-analysis',
+       type: 'POST',
+       data: JSON.stringify({}, null, '\t'),
+       contentType: 'application/json;charset=UTF-8',
+       success: function(response) {
+        window.location = '/inbox'
+       },
+       error: function(error) {
+         console.log(error);
+       }
+     });
+    }
+
+    function addContact(email) {
+      var contactEmailObj = {
+        "email":email
+      };
+      $.ajax({
+       url: '/selectContact',
+       type: 'POST',
+       data: JSON.stringify(contactEmailObj, null, '\t'),
+       contentType: 'application/json;charset=UTF-8',
+       success: function(response) {
+        window.location = '/inbox'
+       },
+       error: function(error) {
+         console.log(error);
+       }
+     });
+    };
+  </script>
   <a href="/">Home</a>&nbsp;<a href="/mailboxes">Mailboxes</a>&nbsp;<a href="/show-Contacts"><a href="/logout">Logout</a>
   <h1>Hi {{ session['first_name'] }}</h1>
   <h2>Your Context id is: {{ session['context_id'] }}</h2>
@@ -7,6 +41,7 @@
   {% if session['provider_name'] == 'google' %}
         Your are logged in with Google.<br />
   {% endif %}
+  <p>Selects the contacts you wish to analyse the click <a href="javascript: doAnalysis()">here</a>
   {% if(user.pending_sync) %}
     <p>Your mailbox is currently being processed. Your screen will refresh once complete</p>
   {% elif(user.pending_contacts) %}
@@ -30,40 +65,6 @@
       <tr><td>{{ contact }}</td><td><a href="javascript: addContact('{{ contact }}')">Add</button></td></tr>
     {% endfor %}
   </table>
-      <script>
-      function doAnalysis() {
-          $.ajax({
-           url: '/do-analysis',
-           type: 'POST',
-           data: JSON.stringify({}, null, '\t'),
-           contentType: 'application/json;charset=UTF-8',
-           success: function(response) {
-            window.location = '/inbox'
-           },
-           error: function(error) {
-             console.log(error);
-           }
-         });
-        }
-
-        function addContact(email) {
-          var contactEmailObj = {
-            "email":email
-          };
-          $.ajax({
-           url: '/selectContact',
-           type: 'POST',
-           data: JSON.stringify(contactEmailObj, null, '\t'),
-           contentType: 'application/json;charset=UTF-8',
-           success: function(response) {
-            window.location = '/inbox'
-           },
-           error: function(error) {
-             console.log(error);
-           }
-         });
-        };
-      </script>
       <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
   {% elif(user.pending_analysis) %}
     <p>Our cognitive minions are currently analysing your mailbox. Your screen will resfesh once complete</p>

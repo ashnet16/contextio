@@ -42,8 +42,11 @@ class DataStore:
 
     def saveMessages(self, messages):
         messagesCollection = self.db.messages
-        result = messagesCollection.insert_many(messages)
-        return len(result.inserted_ids) == len(messages)
+        counter = 0
+        for message in messages:
+            result = messagesCollection.update({'_id': message['_id']}, message, True)
+            ++counter
+        return counter == len(messages)
 
     def saveMessage(self, **message):
         messagesCollection = self.db.messages
@@ -52,7 +55,7 @@ class DataStore:
 
     def savePersonality(self, **personality):
         personalityCollection = self.db.personality
-        result = personalityCollection.insert_one(personality)
+        result = personalityCollection.update({ '_id': personality['_id']}, personality, True)
         return personality
 
     def savePersonalities(self, *personalities):

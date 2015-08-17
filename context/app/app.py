@@ -40,11 +40,8 @@ MONGODB_PORT = 27017
 DBS_NAME = 'nous'
 
 # contextio key and secret key
-#CONSUMER_KEY = 'l57sr7jp'
-#CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
-CONSUMER_KEY = '9dowia6v'
-CONSUMER_SECRET = 'ngDC8NbL3d72cu1Y'
-
+CONSUMER_KEY = 'l57sr7jp'
+CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -74,8 +71,8 @@ def runAnalysis(userEmail):
         singleUserAvgTone = 0
         try:
             # we need to get user<->contact messages first
-            userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=2, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contact['emails'][0], limit=2, include_body=1, body_type="text/plain")
+            userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
         except:
             errMsg = sys.exc_info()[0]
             session.clear()
@@ -84,15 +81,17 @@ def runAnalysis(userEmail):
             contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact['emails'][0], 'to': userEmail, 'personality':True})
             contactRootJsonList.append(contactRootJson)
             contactAvgTone = contactRootJson['avgTone_msgsFromContact']
+            dataStore.savePersonality(**{ '_id': contactRootJson['email'], 'personality': contactRootJson['personality']})
+            dataStore.saveMessages(contactRootJson['emailMessages'])
         if len(userMsgs) > 0:
             userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': contact['emails'][0], 'to':userEmail, 'personality':False})
             totalUserMsgs = userMsgs + totalUserMsgs
             singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
-            print userRootJson['emailMessages']
             dataStore.saveMessages(userRootJson['emailMessages'])
         if contactAvgTone != 0 and singleUserAvgTone != 0:
             userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
     userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
+    dataStore.savePersonality(**{ '_id': userEmail, 'personality': userRootJson['personality']})
     userRootJson['contacts'] = contactRootJsonList
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'

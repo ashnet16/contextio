@@ -90,8 +90,9 @@ class Parser:
         toneSum = 0
         toneTracking = []
         for m in msgs:
-            if m.get(include_body=1, body_type='text/plain') == False:
-                continue
+            #if m.get(include_body=1, body_type='text/plain') == False:
+            #    continue
+            #m.get_body(type='text/plain')
             message = {}
             message['datetime'] = m.date
             message['subject'] = m.subject
@@ -99,14 +100,18 @@ class Parser:
                 message['to'] = params['to']
             message['from'] = params['from_']
             message['_id'] = m.message_id
-            #logger.info('msg %s', m.body)
+            if(isContact):
+                message['owner'] = params['to']
+            else:
+                message['owner'] = params['from_']
+            logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
                 message['content'] = content
                 #logger.info('content %s', content)
                 msgContentList.append(content)
                 toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
-                #logger.info('tone %s', toneJson)
+                logger.info('tone %s', toneJson)
                 message['tone'] = toneJson
                 toneAve = self.extractToneAverage(toneJson)
                 toneTracking.append(toneAve)
@@ -123,12 +128,13 @@ class Parser:
                 rootJson['personality'] = {}
             else:
                 self.getBig5(personalityJson)
-                rootJson['personality'] = self.personality
+                rootJson['personality'] = personalityJson
         if params['type_'] == 'masterUser':
             rootJson['emailMessages'] = emailMessages
         if isContact:
             rootJson['avgTone_msgsFromContact'] = toneSum / len(msgs)
             rootJson['toneTracking_msgsFromContact'] = toneTracking[:5]
+            rootJson['emailMessages'] = emailMessages
         else:
             if len(msgs) > 0:
                 rootJson['avgTone_msgsFromUser'] = toneSum / len(msgs)
