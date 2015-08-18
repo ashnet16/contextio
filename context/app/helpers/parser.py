@@ -19,7 +19,7 @@ logger.addHandler(nouslog)
 logger.info('In Parser')
 
 class Parser:
-    """Takes in Message JSON object from API and returns requested attributes"""
+    """Takes in  JSON object from API and returns requested attributes"""
 
     def __init__(self):
         # NB This was only tested in GMAIL, we don't know if the thread msg header format is uniform
@@ -49,17 +49,6 @@ class Parser:
             cleanMsg = msg
         return cleanMsg
 
-    def byteify(input):
-        if isinstance(input, dict):
-            return {byteify(key):byteify(value) for key,value in input.iteritems()}
-        elif isinstance(input, list):
-            return [byteify(element) for element in input]
-        elif isinstance(input, unicode):
-            return input.encode('utf-8')
-        else:
-            return input
-
-
     def getBig5(self, personality):
         self.personality = []
         level1 = personality['tree']
@@ -73,6 +62,32 @@ class Parser:
             self.personality[str(name)] = child['percentage']
         return
 
+    def parseFullBig5(self, personalityData):
+        fullBig5 = []
+        personality = personalityData['personality']
+        level1 = personality['tree']
+        level2 = level1['children']
+        level3 = level2[0]['children']
+        level4 = level3[0]
+        level5 = level4['children']
+        for child in level5:
+            name = child['name']
+            percentage = child['percentage']
+            subFacet = child['children']
+            subFacets = []
+            for s in subFacet:
+                subFacet = {}
+                subFacet[(s['name'])] = s['percentage']
+                subFacets.append(subFacet)
+            mainBig5 ={}
+            mainBig5[name] = percentage
+            subFacetsInfo = {}
+            subFacetsInfo['subFacets'] = subFacets
+            oneBig5 = []
+            oneBig5.append(mainBig5)
+            oneBig5.append(subFacetsInfo)
+            fullBig5.append(oneBig5)
+        return fullBig5
 
     def analyzeMessages(self, msgs, **params):
         rootJson = {}
@@ -162,3 +177,25 @@ class Parser:
                     if sInfo['name'] == 'Anger':
                         toneSum = toneSum - float(sInfo['raw_score'])
         return toneSum / 3
+
+    def parseTone(self, msg):
+        toneJson = {}
+        tone = msg['tone']
+        level1 = tone['children']
+        for toneType in level1:
+            toneType['name']
+            level2 = toneType['children']
+            subElements = []
+            for typeElements in level2: 
+                subElement = {}
+                subElement[(typeElements['name'])] = typeElements['normalized_score']
+                subElements.append(subElement)
+            toneJson[(toneType['name'])] = subElements
+        return toneJson
+
+    def parseFullPersonality(self, personality):
+        fullPersonalityJson = {}
+        pTree = personality['personality']['tree']
+        for p in pTree:
+            pChild = p['child']
+
