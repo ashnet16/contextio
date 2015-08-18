@@ -1,4 +1,6 @@
 from pymongo import MongoClient
+from helpers.parser import Parser
+import json
 
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
@@ -9,10 +11,16 @@ class DataStore:
     def __init__(self):
         self.client = MongoClient(MONGODB_HOST, MONGODB_PORT)
         self.db = self.client[DBS_NAME]
+        self.parser = Parser()
 
     def getUser(self, id):
         users = self.db.users
         user = users.find_one({'_id': id })
+        return user
+
+    def getUserByContextId(self, context_id):
+        users = self.db.users
+        user = users.find_one({'context_id': context_id })
         return user
 
     def createUser(self, **user):
@@ -29,3 +37,55 @@ class DataStore:
         users = self.db.users
         result = users.update_one({ '_id': id }, { '$set': user })
         return result == 1
+
+    def addUserContact(self, id, **contact):
+        users = self.db.users
+        result = users.update_one({ '_id': id }, { '$push': { 'contacts': contact } })
+        return result == 1
+
+    def saveMessages(self, messages):
+        messagesCollection = self.db.messages
+        counter = 0
+        for message in messages:
+            result = messagesCollection.update({'_id': message['_id']}, message, True)
+            ++counter
+        return counter == len(messages)
+
+    def saveMessage(self, **message):
+        messagesCollection = self.db.messages
+        result = messagesCollection.insert_one(message).inserted_id
+        return message
+
+    def savePersonality(self, **personality):
+        personalityCollection = self.db.personality
+        result = personalityCollection.update({ '_id': personality['_id']}, personality, True)
+        return personality
+
+    def savePersonalities(self, *personalities):
+        personalityCollection = self.db.personality
+        result = messagesCollection.insert_many(personalities)
+        return len(result.inserted_ids) == len(personalities)
+
+    def getFullBig5(self, email):
+        personalityJson = {}
+        personalityCollection = self.db.personality
+        personalityData = personalityCollection.find({'_id':email},{'personality':1})  
+        return self.parser.parseFullBig5(personalityData[0])
+        
+    def getMessagesFromUser(self, email):
+        msgJson = {}
+        messagesCollection = self.db.messages
+        messages = messagesCollection.find({'from':email})    
+        mList = []
+        for m in messages:
+            newMsg = m
+            newMsg['tone'] = self.parser.parseTone(newMsg)
+            mList.append(newMsg) 
+        msgJson[email] = mList
+        return msgJson
+
+
+    #def getMessages(self, email):
+        
+
+
