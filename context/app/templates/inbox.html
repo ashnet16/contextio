@@ -1,6 +1,44 @@
 {% extends "base.html" %}
 {% block body %}
   <script>
+  $(document).ready(function() {
+    var data = {
+      "email": "{{ session['email'] }}"
+    }
+    /** Example call for personality
+    *   get-fullBig5 gets the full personality insight JSON
+    *   Takes email as { email: anEmailAddress }
+    **/
+    $.ajax({
+     url: '/get-fullBig5',
+     type: 'POST',
+     data: JSON.stringify(data, null, '\t'),
+     contentType: 'application/json;charset=UTF-8',
+     success: function(response) {
+      console.log(JSON.parse(response))
+     },
+     error: function(error) {
+       console.log(error);
+     }
+   });
+
+   /** Example call for messages and tone
+   *   get-messages returns messages with nested tone JSON
+   *   Takes email as { email: anEmailAddress }
+   **/
+   $.ajax({
+    url: '/get-messages',
+    type: 'POST',
+    data: JSON.stringify(data, null, '\t'),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(response) {
+     console.log(JSON.parse(response))
+    },
+    error: function(error) {
+      console.log(error);
+    }
+  });
+});
   function doAnalysis() {
       $.ajax({
        url: '/do-analysis',
@@ -70,11 +108,8 @@
     <p>Our cognitive minions are currently analysing your mailbox. Your screen will resfesh once complete</p>
   {% else %}
   <h2> Messages and Tones</h2>
-  <p> {{ jsonOut }}
-  {% for m in msgs %}
-    <div><p>Message is {{ m }}  </p></div>
-  {% endfor %}
+  <div><p>placeholder for message display</p></div>
   <h3> Personality </h3>
-  {{ b5Out }}
+  <div><p>placeholder for personality display</p></div>
   {% endif %}
 {% endblock body %}

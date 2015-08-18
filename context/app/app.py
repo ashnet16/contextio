@@ -17,6 +17,9 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
+personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
+
 from passlib.hash import pbkdf2_sha256
 
 dataStore = DataStore()
@@ -78,7 +81,7 @@ def runAnalysis(userEmail):
             errMsg = "Error Retrieving Contacts"
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
-        logger.info("num msgs %d, %d ", contactMsgs, userMsgs)
+        #logger.info("num msgs %d, %d ", contactMsgs, userMsgs)
         if len(contactMsgs) > 0:
             contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact['emails'][0], 'to': userEmail, 'personality':True})
             contactRootJsonList.append(contactRootJson)
@@ -217,18 +220,16 @@ def inbox():
     logger.info("pending sync %d", user['pending_sync'] )
     logger.info("pending contacts %d", user['pending_contacts'] )
     logger.info("pending analysis %d", user['pending_analysis'] )
-    msgOut = dataStore.getMessagesFromUser(userEmail)
-    b5Out = dataStore.getFullBig5 (userEmail)
     if(user['pending_sync']):
-        return render_template('inbox.html', contactList=[], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
+        return render_template('inbox.html', contactList=[], user=user)
     elif(user['pending_contacts']):
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut= json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
+        return render_template('inbox.html', contactList=session['contacts'], user=user)
     elif(user['pending_analysis']):
         logger.info("pending analysis contact %s", session['contacts'] )
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
+        return render_template('inbox.html', contactList=session['contacts'], user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html', contactList=user['contacts'], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
+        return render_template('inbox.html', contactList=user['contacts'], user=user)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
@@ -412,7 +413,7 @@ def updateServerSettings(accountObject, email, provider_refresh_token, provider_
 @app.route('/personality', methods=['POST'])
 def personality():
     data = request.form['text'];
-    personalityJson = personalityInsights.getProfile(data.encode('utf-8'))
+    personalityJson = personalityAnalyzer.getProfile(data.encode('utf-8'))
     return json.dumps(personalityJson)
 
 @app.route('/tone', methods=['POST'])
@@ -432,14 +433,22 @@ def synonym():
 # Returns the full_personality_json
 @app.route('/get-fullBig5', methods=['POST'])
 def getFullBig5():
-    email = request.form['email']
-    return datastore.getFullBig5(email)
+    user = dataStore.getUser(session['email'])
+    if(not user['pending_sync'] and not user['pending_contacts'] and not user['pending_analysis']):
+        email = request.json['email']
+        return json.dumps(dataStore.getFullBig5(email))
+    else:
+        return json.dumps(None)
 
 # Returns the messages sent by a user. Expects { email: anEmailAddress }
 @app.route('/get-messages', methods=['POST'])
 def getMessagesFromUser():
-    email = request.form['email'];
-    return datastore.getMessagesFromUser(email)
+    user = dataStore.getUser(session['email'])
+    if(not user['pending_sync'] and not user['pending_contacts'] and not user['pending_analysis']):
+        email = request.json['email'];
+        return json.dumps(dataStore.getMessagesFromUser(email))
+    else:
+        return json.dumps(None)
 
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
