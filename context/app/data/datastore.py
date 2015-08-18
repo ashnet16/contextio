@@ -72,7 +72,7 @@ class DataStore:
         personalityData = personalityCollection.find({'_id':email},{'personality':1})  
         return self.parser.parseFullBig5(personalityData[0])
         
-    def getMessagesByUser(self, email):
+    def getMessagesFromUser(self, email):
         msgJson = {}
         messagesCollection = self.db.messages
         messages = messagesCollection.find({'from':email})    
