@@ -71,21 +71,17 @@ class Parser:
         level4 = level3[0]
         level5 = level4['children']
         for child in level5:
-            name = child['name']
-            percentage = child['percentage']
+            oneBig5 = {}
+            oneBig5['name'] = child['name']
+            oneBig5['percentage'] = child['percentage']
             subFacet = child['children']
             subFacets = []
             for s in subFacet:
                 subFacet = {}
-                subFacet[(s['name'])] = s['percentage']
+                subFacet['name'] = s['name']
+                subFacet['percentage'] = s['percentage']
                 subFacets.append(subFacet)
-            mainBig5 ={}
-            mainBig5[name] = percentage
-            subFacetsInfo = {}
-            subFacetsInfo['subFacets'] = subFacets
-            oneBig5 = []
-            oneBig5.append(mainBig5)
-            oneBig5.append(subFacetsInfo)
+            oneBig5['subFacets'] = subFacets
             fullBig5.append(oneBig5)
         return fullBig5
 
