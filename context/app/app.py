@@ -8,7 +8,6 @@ from authomatic import Authomatic
 from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
 import multiprocessing
-import logging
 
 import contextio as c
 from data.datastore import DataStore
@@ -21,19 +20,9 @@ toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
 
 from passlib.hash import pbkdf2_sha256
-
 dataStore = DataStore()
 
-# Adding logging
-logger = logging.getLogger('Nous')
-logger.setLevel(logging.INFO)
-nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-nouslog.setFormatter(formatter)
-logger.addHandler(nouslog)
-
-logger.info('TEST')
-
+from nouslog import log
 app = Flask(__name__)
 app.secret_key = 'nous session key'
 
@@ -44,6 +33,8 @@ DBS_NAME = 'nous'
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+
+logger = log()
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
@@ -179,6 +170,7 @@ def logout():
 
 @app.route('/inbox', methods=['GET'])
 def inbox():
+    logger.info("Just checking" )
     if 'provider_name' in session:
         if session['provider_name'] != 'local':
             if 'credentials' in session:
