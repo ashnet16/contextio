@@ -7,8 +7,6 @@ from flask import Flask, render_template, request, url_for, make_response, sessi
 from authomatic import Authomatic
 from authomatic.adapters import WerkzeugAdapter
 from config import CONFIG
-import logging
-from logging.handlers import RotatingFileHandler
 
 
 import contextio as c
@@ -17,15 +15,9 @@ from helpers.parser import Parser
 
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
-
 from passlib.hash import pbkdf2_sha256
-
 dataStore = DataStore()
-#from pymongo import Connection
-#import json
-#from bson import json_util
-#from bson.json_util import dumps
-
+from nouslog import log
 app = Flask(__name__)
 app.secret_key = 'nous session key'
 
@@ -33,10 +25,12 @@ MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
 
-
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+
+logger = log()
+
 
 context_io = c.ContextIO(
    consumer_key=CONSUMER_KEY,
