@@ -21,7 +21,6 @@ from passlib.hash import pbkdf2_sha256
 
 dataStore = DataStore()
 
-
 # Adding logging
 logger = logging.getLogger('Nous')
 logger.setLevel(logging.INFO)
@@ -51,6 +50,7 @@ authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
 parser = Parser()
 
 def runAnalysis(userEmail):
+    logger.info('runAnalysis %s ', userEmail)
     user = dataStore.getUser(userEmail)
     params = {
         'id': user["context_id"]
@@ -66,17 +66,19 @@ def runAnalysis(userEmail):
     contacts = user['contacts']
     contactRootJsonList = []
     for contact in contacts:
-        logger.info("contact %s", contact)
+        logger.info("contact in run analysis %s", contact)
         contactAvgTone = 0
         singleUserAvgTone = 0
         try:
             # we need to get user<->contact messages first
+            logger.info("getting email from %s ", contact['emails'][0])
             userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
             contactMsgs = account.get_messages(sender = contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
         except:
-            errMsg = sys.exc_info()[0]
+            errMsg = "Error Retrieving Contacts"
             session.clear()
-            return render_template ('error.html', errMsg = errMsg)
+            return render_template ('error.html', errorMsg = errMsg)
+        logger.info("num msgs %d, %d ", contactMsgs, userMsgs)
         if len(contactMsgs) > 0:
             contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact['emails'][0], 'to': userEmail, 'personality':True})
             contactRootJsonList.append(contactRootJson)
@@ -182,8 +184,15 @@ def inbox():
                     return render_template('userLogin.html')
     userEmail = session["email"]
     user = dataStore.getUser(userEmail)
+    try:
+        #add error checking to avoid stale session variables
+        sessionContextId = user["context_id"]
+    except:
+        session.clear()
+        errMsg = "Expired Session"
+        return render_template ('error.html', errorMsg = errMsg)
     params = {
-        'id': user["context_id"]
+        'id': sessionContextId
     }
     account = c.Account(context_io, params)
     # The following is a hack to get around limitation with callbacks to localhost
@@ -199,32 +208,45 @@ def inbox():
             user['pending_sync'] = False
     # End of localhost hack
 
-    try:
-        getContacts(account.get_contacts(limit = 1))
-    except:
-        session.clear()
-        return render_template('error.html', errorMsg="Error Retrieving Contacts")
+    #try:
+    getContacts(account.get_contacts(limit = 1))
+    logger.info("calling get contacts" )
+    #except:
+    #    session.clear()
+    #    return render_template('error.html', errorMsg="Error Retrieving Contact On Account Creation")
+    logger.info("pending sync %d", user['pending_sync'] )
+    logger.info("pending contacts %d", user['pending_contacts'] )
+    logger.info("pending analysis %d", user['pending_analysis'] )
+    msgOut = dataStore.getMessagesByUser(userEmail)
+    b5Out = dataStore.getFullBig5 (userEmail)
     if(user['pending_sync']):
-        return render_template('inbox.html', contactList=[], jsonOut = json.dumps({}), user=user)
+        return render_template('inbox.html', contactList=[], jsonOut = msgOut, b5Out = b5Out, user=user)
     elif(user['pending_contacts']):
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps({}), user=user)
+        return render_template('inbox.html', contactList=session['contacts'], jsonOut= msgOut, b5Out = b5Out, user=user)
     elif(user['pending_analysis']):
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps({}), user=user)
+        logger.info("pending analysis contact %s", session['contacts'] )
+        return render_template('inbox.html', contactList=session['contacts'], jsonOut = msgOut, b5Out = b5Out, user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html', contactList=user['contacts'], jsonOut = json.dumps({}), user=user)
+        return render_template('inbox.html', contactList=user['contacts'], jsonOut = msgOut, b5Out = b5Out, user=user)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
+    logger.info("in do analysis ")
     dataStore.updateUser(session["email"], **{ 'pending_analysis': True, 'pending_contacts': False })
     p = multiprocessing.Process(target=runAnalysis, args=(session['email'],))
     p.start()
     return json.dumps({ 'message': 'Running analysis'})
 
 def getContacts(contacts):
+    logger.info('info from contextio %s', contacts)
     contactList = []
     for contact in contacts:
         contactList.append(contact.email)
+        logger.info('in get contacts %s ', contact.email)
+    #Lory: add to DB -- may be changed if we have the selected contacts
+    #if emailAdd is not None:
+    #    dataStore.updateUser(emailAdd, **{'contacts': contactList})
     session['contacts'] = contactList
 
 def createContextAccount(**args):
@@ -407,21 +429,29 @@ def synonym():
     return json.dumps(toneJson)
 
 # Returns the personality given a email address { email: anEmailAddress }
-@app.route('/get-personality', methods=['POST'])
+# Returns the full_personality_json
+@app.route('/get-fullBig5', methods=['POST'])
 def getPersonality():
-    email = request.form['email'];
-    # Get personality from the mongodb where the _id = email
+    return datastore.getFullBig5(**{'email':email})
 
 # Returns the messages sent to an email address. Expects { email: anEmailAddress }
-@app.route('/get-received-messages', methods=['POST'])
-def getReceivedMessages():
-    email = request.form['email'];
+#@app.route('/get-messages', methods=['POST'])
+#def getMessages():
+    #email = request.form['email'];
+    #return datastore.getMessages(**{'email':email})
     # Get messages from the mongodb where the to = email
 
-# Returns the message sent from an email address. Expects { email: anEmailAddress }
-@app.route('/get-sent-messages', methods=['POST'])
-def getSentMessages():
-    email = request.form['email'];
+# Returns individual message.  Expects { messageId: messageId}
+#@app.route('/get-message', methods=['POST'])
+#def getMessage():
+#    email = request.form['messageId'];
+#    return datastore.getMessage(**{'messageId':messageId})
+
+# Returns a list of CONTACT information given a USER email. Expects {email: anEmailAddress }
+#@app.route('/get-user-contact-analysis', methods=['POST'])
+    #email = request.form['email']  # email is the USER
+    #return dataStore.getInfoForContacts(email)
+
     # Get messages from the mongodb where the from = email
 
 if __name__ == "__main__":
