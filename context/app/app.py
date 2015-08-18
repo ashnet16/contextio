@@ -217,18 +217,18 @@ def inbox():
     logger.info("pending sync %d", user['pending_sync'] )
     logger.info("pending contacts %d", user['pending_contacts'] )
     logger.info("pending analysis %d", user['pending_analysis'] )
-    msgOut = dataStore.getMessagesByUser(userEmail)
+    msgOut = dataStore.getMessagesFromUser(userEmail)
     b5Out = dataStore.getFullBig5 (userEmail)
     if(user['pending_sync']):
-        return render_template('inbox.html', contactList=[], jsonOut = msgOut, b5Out = b5Out, user=user)
+        return render_template('inbox.html', contactList=[], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
     elif(user['pending_contacts']):
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut= msgOut, b5Out = b5Out, user=user)
+        return render_template('inbox.html', contactList=session['contacts'], jsonOut= json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
     elif(user['pending_analysis']):
         logger.info("pending analysis contact %s", session['contacts'] )
-        return render_template('inbox.html', contactList=session['contacts'], jsonOut = msgOut, b5Out = b5Out, user=user)
+        return render_template('inbox.html', contactList=session['contacts'], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html', contactList=user['contacts'], jsonOut = msgOut, b5Out = b5Out, user=user)
+        return render_template('inbox.html', contactList=user['contacts'], jsonOut = json.dumps(msgOut), b5Out = json.dumps(b5Out), user=user)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
@@ -431,15 +431,15 @@ def synonym():
 # Returns the personality given a email address { email: anEmailAddress }
 # Returns the full_personality_json
 @app.route('/get-fullBig5', methods=['POST'])
-def getPersonality():
-    return datastore.getFullBig5(**{'email':email})
+def getFullBig5():
+    email = request.form['email']
+    return datastore.getFullBig5(email)
 
-# Returns the messages sent to an email address. Expects { email: anEmailAddress }
-#@app.route('/get-messages', methods=['POST'])
-#def getMessages():
-    #email = request.form['email'];
-    #return datastore.getMessages(**{'email':email})
-    # Get messages from the mongodb where the to = email
+# Returns the messages sent by a user. Expects { email: anEmailAddress }
+@app.route('/get-messages', methods=['POST'])
+def getMessagesFromUser():
+    email = request.form['email'];
+    return datastore.getMessagesFromUser(email)
 
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
