@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block body %}
+<script>
+$(document).ready(function() {
+  $(document).on("click", "#addGmail", function(e) {
+    var userInfo = {
+      "provider_name":'google',
+      "email":'',
+      "password": ''
+    };
+    $.ajax({
+       url: '/add-mailbox',
+       type: 'POST',
+       data: JSON.stringify(userInfo, null, '\t'),
+       contentType: 'application/json;charset=UTF-8',
+       success: function(response) {
+         window.location = '/inbox'
+       },
+       error: function(error) {
+         console.log(error);
+       }
+     });
+  });
+
+  $(document).on("click", "#addSmpt", function(e) {
+    var email = $("#email").val();
+    var password = $("#password").val();
+    var userInfo = {
+      "email":email
+    };
+    $.ajax({
+       url: '/add-mailbox',
+       type: 'POST',
+       data: JSON.stringify(userInfo, null, '\t'),
+       contentType: 'application/json;charset=UTF-8',
+       success: function(response) {
+         var result = JSON.parse(response);
+         window.location = result.browser_redirect_url;
+       },
+       error: function(error) {
+         console.log(error);
+       }
+     });
+  });
+});
+</script>
+  <a href="/">Home</a>&nbsp;<a href="/logout">Logout</a>
+  <div>
+    <p>Enter the email address for the mailbox you would like to add</p>
+    <div>
+      <label>Email:</label><br/>
+      <input id="email" type="email" />
+    </div>
+    <button id="addSmpt" type="button" class="login__button">Add</button>
+  </div>
+{% endblock body %}
