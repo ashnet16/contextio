@@ -181,12 +181,11 @@ class Parser:
         for toneType in level1:
             toneType['name']
             level2 = toneType['children']
-            subElements = []
+            subElement = {}
             for typeElements in level2: 
-                subElement = {}
                 subElement[(typeElements['name'])] = typeElements['normalized_score']
-                subElements.append(subElement)
-            toneJson[(toneType['name'])] = subElements
+                #subElements.append(subElement)
+            toneJson[(toneType['name'])] = subElement
         return toneJson
 
     def parseFullPersonality(self, personality):
