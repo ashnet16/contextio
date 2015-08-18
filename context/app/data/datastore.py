@@ -1,4 +1,6 @@
 from pymongo import MongoClient
+from helpers.parser import Parser
+import json
 
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
@@ -9,6 +11,7 @@ class DataStore:
     def __init__(self):
         self.client = MongoClient(MONGODB_HOST, MONGODB_PORT)
         self.db = self.client[DBS_NAME]
+        self.parser = Parser()
 
     def getUser(self, id):
         users = self.db.users
@@ -62,3 +65,27 @@ class DataStore:
         personalityCollection = self.db.personality
         result = messagesCollection.insert_many(personalities)
         return len(result.inserted_ids) == len(personalities)
+
+    def getFullBig5(self, email):
+        personalityJson = {}
+        personalityCollection = self.db.personality
+        personalityData = personalityCollection.find({'_id':email},{'personality':1})  
+        return self.parser.parseFullBig5(personalityData[0])
+        
+    def getMessagesByUser(self, email):
+        msgJson = {}
+        messagesCollection = self.db.messages
+        messages = messagesCollection.find({'from':email})    
+        mList = []
+        for m in messages:
+            newMsg = m
+            newMsg['tone'] = self.parser.parseTone(newMsg)
+            mList.append(newMsg) 
+        msgJson[email] = mList
+        return msgJson
+
+
+    #def getMessages(self, email):
+        
+
+
