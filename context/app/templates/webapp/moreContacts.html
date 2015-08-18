@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<h2> List of contacts </h2>
+{% for contact in contactList %}
+<div><p>{{ contact }}</p></div>
+{% endfor %}
+
+<button> < </button>
+<button> > </button>
+
+{% endblock body %}

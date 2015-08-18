@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+  <a href="/">Home</a>&nbsp;<a href="/mailboxes">Mailboxes</a>&nbsp;<a href="/show-Contacts"><a href="/logout">Logout</a>
+  <h1>Hi {{ session['first_name'] }}</h1>
+  <h2>Your Context id is: {{ session['context_id'] }}</h2>
+  <h2>Your email is: {{ session['email'] }}</h2>
+  {% if session['provider_name'] == 'google' %}
+        Your are logged in with Google.<br />
+  {% endif %}
+  <h2>Your contacts</h2>
+  <p> Currently displaying a list of 10 contacts</p>
+  {% for contact in contactList %}
+    <div><p>{{ contact }}</p></div>
+  {% endfor %}
+    <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
+  <h2> Messages and Tones</h2>
+  {% for m in msgs %}
+    <div><p>Message is {{ m }}  </p></div>
+  {% endfor %}
+  {% for t in tones %}
+    <div><p>Tone is {{ t }}  </p></div>
+  {% endfor %}
+{% endblock body %}
