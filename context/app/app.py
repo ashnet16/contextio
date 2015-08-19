@@ -192,11 +192,14 @@ def inbox():
     account = c.Account(context_io, params)
     # The following is a hack to get around limitation with callbacks to localhost
     if(user['pending_sync'] and 'localhost' in url_for('inbox', _external=True)):
-        sources = account.get_sources()
-        isOkay = True
+        sources = account.get_sync()
+        isOkay = False
+        # The format of the response is awful so the following is as good as I could get
         for source in sources:
-            if(source.status != 'OK'):
-                isOkay = False
+            if(sources[source] != None):
+                for sync in sources[source]:
+                    if(sources[source][sync]['initial_import_finished'] == True):
+                        isOkay = True
         if(isOkay):
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
@@ -355,8 +358,9 @@ def selectContact():
     userSelectedContact = c.Contact(userAccount,{'email':contactEmail})
     userSelectedContact.get()
     user = dataStore.getUser(session['email'])
-    dataStore.addUserContact(user['_id'],  ** { 'name': userSelectedContact.name, 'emails': [contactEmail] })
-    return json.dumps({ 'message': 'Contact added' })
+    contact = { 'name': userSelectedContact.name, 'emails': [contactEmail] }
+    dataStore.addUserContact(user['_id'],  **contact)
+    return json.dumps(contact)
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
@@ -441,6 +445,57 @@ def getMessagesFromUser():
         return json.dumps(dataStore.getMessagesFromUser(email))
     else:
         return json.dumps(None)
+
+@app.route('/get-inbox', methods=["GET"])
+def getInbox():
+    user = dataStore.getUser(session['email'])
+    userAccount = c.Account(context_io, { 'id': user["context_id"] })
+    messages = userAccount.get_messages(limit=20, include_body=1, body_type="text/html")
+    result = {
+        'msgCount': userAccount.nb_messages,
+        'messages': messages
+    }
+    return json.dumps(result, default=lambda o: o.__dict__)
+
+@app.route('/get-contacts', methods=["GET"])
+def getUserContacts():
+    user = dataStore.getUser(session['email'])
+    userAccount = c.Account(context_io, { 'id': user["context_id"] })
+    contacts = userAccount.get_contacts()
+    result = {
+        'contacts': contacts,
+        'selectedContacts': user['contacts']
+    }
+    return json.dumps(result, default=lambda o: o.__dict__)
+
+@app.route('/check-status', methods=["GET"])
+def checkStatus():
+    user = dataStore.getUser(session['email'])
+    # The following is a hack to get around limitation with callbacks to localhost
+    if(user['pending_sync'] and 'localhost' in url_for('inbox', _external=True)):
+        params = {
+            'id': user["context_id"]
+        }
+        account = c.Account(context_io, params)
+        sources = account.get_sync()
+        isOkay = False
+        # The format of the response is awful so the following is as good as I could get
+        for source in sources:
+            if(sources[source] != None):
+                for sync in sources[source]:
+                    if(sources[source][sync]['initial_import_finished'] == True):
+                        isOkay = True
+        if(isOkay):
+            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
+            user['pending_contacts'] = True
+            user['pending_sync'] = False
+            user['pending_anlysis'] = False
+    # End of localhost hack
+    return json.dumps({
+        'pending_sync': user['pending_sync'],
+        'pending_contacts': user['pending_contacts'],
+        'pending_analysis': user['pending_analysis']
+    })
 
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
