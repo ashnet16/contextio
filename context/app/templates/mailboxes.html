@@ -43,12 +43,11 @@ function removeSource(label) {
    });
 };
 </script>
-  <a href="/">Home</a>&nbsp;<a href="/logout">Logout</a>
   <h2> List of mailboxes </h2>
   <table>
     <thead><tr><td>Username</td><td>Status</td><td></td></tr></thead>
   {% for source in sources %}
-    <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td>{{ source["label"] }}<a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></tr>
+    <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></tr>
   {% endfor %}
 </table>
   <div>

@@ -67,25 +67,26 @@ class DataStore:
         return len(result.inserted_ids) == len(personalities)
 
     def getFullBig5(self, email):
+        print email
         personalityJson = {}
         personalityCollection = self.db.personality
-        personalityData = personalityCollection.find({'_id':email},{'personality':1})  
-        return self.parser.parseFullBig5(personalityData[0])
-        
+        personalityData = personalityCollection.find({'_id':email},{'personality':1})
+        if(personalityData[0]):
+            return self.parser.parseFullBig5(personalityData[0])
+        else:
+            return None
+
     def getMessagesFromUser(self, email):
         msgJson = {}
         messagesCollection = self.db.messages
-        messages = messagesCollection.find({'from':email})    
+        messages = messagesCollection.find({'from':email})
         mList = []
         for m in messages:
             newMsg = m
             newMsg['tone'] = self.parser.parseTone(newMsg)
-            mList.append(newMsg) 
+            mList.append(newMsg)
         msgJson[email] = mList
         return msgJson
 
 
     #def getMessages(self, email):
-        
-
-

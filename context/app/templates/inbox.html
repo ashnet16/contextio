@@ -1,115 +1,38 @@
 {% extends "base.html" %}
 {% block body %}
-  <script>
-  $(document).ready(function() {
-    var data = {
-      "email": "{{ session['email'] }}"
-    }
-    /** Example call for personality
-    *   get-fullBig5 gets the full personality insight JSON
-    *   Takes email as { email: anEmailAddress }
-    **/
-    $.ajax({
-     url: '/get-fullBig5',
-     type: 'POST',
-     data: JSON.stringify(data, null, '\t'),
-     contentType: 'application/json;charset=UTF-8',
-     success: function(response) {
-      console.log(JSON.parse(response))
-     },
-     error: function(error) {
-       console.log(error);
-     }
-   });
-
-   /** Example call for messages and tone
-   *   get-messages returns messages with nested tone JSON
-   *   Takes email as { email: anEmailAddress }
-   **/
-   $.ajax({
-    url: '/get-messages',
-    type: 'POST',
-    data: JSON.stringify(data, null, '\t'),
-    contentType: 'application/json;charset=UTF-8',
-    success: function(response) {
-     console.log(JSON.parse(response))
-    },
-    error: function(error) {
-      console.log(error);
-    }
-  });
-});
-  function doAnalysis() {
-      $.ajax({
-       url: '/do-analysis',
-       type: 'POST',
-       data: JSON.stringify({}, null, '\t'),
-       contentType: 'application/json;charset=UTF-8',
-       success: function(response) {
-        window.location = '/inbox'
-       },
-       error: function(error) {
-         console.log(error);
-       }
-     });
-    }
-
-    function addContact(email) {
-      var contactEmailObj = {
-        "email":email
-      };
-      $.ajax({
-       url: '/selectContact',
-       type: 'POST',
-       data: JSON.stringify(contactEmailObj, null, '\t'),
-       contentType: 'application/json;charset=UTF-8',
-       success: function(response) {
-        window.location = '/inbox'
-       },
-       error: function(error) {
-         console.log(error);
-       }
-     });
-    };
-  </script>
-  <a href="/">Home</a>&nbsp;<a href="/mailboxes">Mailboxes</a>&nbsp;<a href="/show-Contacts"><a href="/logout">Logout</a>
-  <h1>Hi {{ session['first_name'] }}</h1>
-  <h2>Your Context id is: {{ session['context_id'] }}</h2>
-  <h2>Your email is: {{ session['email'] }}</h2>
-  {% if session['provider_name'] == 'google' %}
-        Your are logged in with Google.<br />
-  {% endif %}
-  <p>Selects the contacts you wish to analyse the click <a href="javascript: doAnalysis()">here</a>
-  {% if(user.pending_sync) %}
-    <p>Your mailbox is currently being processed. Your screen will refresh once complete</p>
-  {% elif(user.pending_contacts) %}
-    <h2>Your contacts</h2>
-    <p>To allow us to analyze your mailbox effectively you need to select one or more contact to include</p>
-    <p>Selects the contacts you wish to analyse then click <a href="javascript: doAnalysis()">here</a>
-    <h3>Selected contacts</h3>
-    <table>
-      <thead><tr><td>Username</td><td></td></tr></thead>
-    {% for contact in user['contacts'] %}
-      {% for email in contact['emails'] %}
-        <tr><td>{{ contact['name'] }}</td><td>&nbsp;</td></tr>
-      {% endfor %}
-    {% endfor %}
-    </table>
-    <h3>Available contacts</h3>
-    <p> Currently displaying a list of 10 contacts</p>
-    <table>
-      <thead><tr><td>Username</td><td></td></tr></thead>
-    {% for contact in contactList %}
-      <tr><td>{{ contact }}</td><td><a href="javascript: addContact('{{ contact }}')">Add</button></td></tr>
-    {% endfor %}
-  </table>
-      <a id="showMoreContacts" href="/showMoreContacts">See more contacts</a>
-  {% elif(user.pending_analysis) %}
-    <p>Our cognitive minions are currently analysing your mailbox. Your screen will resfesh once complete</p>
-  {% else %}
-  <h2> Messages and Tones</h2>
-  <div><p>placeholder for message display</p></div>
-  <h3> Personality </h3>
-  <div><p>placeholder for personality display</p></div>
-  {% endif %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3" ng-show="app.status.pending_contacts">
+        <div class="text-center">
+          <p>To allow us to analyze your mailbox effectively you need to select one or more contacts to include</p>
+        </div>
+        <table class="table">
+          <tr ng-repeat="contact in app.contacts.contacts">
+            <td class="col-sm-10">[[ app.contactText(contact)]]</td>
+            <td><a class="btn btn-xs btn-default pull-right" ng-click="app.toggleContact(contact)">
+              <span ng-show="app.contactExists(contact)">Remove</span>
+              <span ng-show="!app.contactExists(contact)">Add</span></a>
+            </td>
+          </tr>
+        </table>
+        <div>
+          <a class="btn btn-primary pull-right" ng-show="app.contacts" ng-click="app.doAnalysis()">Analyse Now</a>
+        </div>
+      </div>
+      <div class="col-md-6 col-md-offset-3 text-center" ng-show="app.status.pending_sync">
+        <p ng-show="app.status.pending_sync">Your mailbox is currently being processed. Your screen will refresh once complete</p>
+      </div>
+      <div class="col-md-6 col-md-offset-3 text-center" ng-show="app.status.pending_analysis">
+        <p ng-show="app.status.pending_analysis">Our cognitive minions are currently analysing your mailbox. Your screen will resfesh once complete</p>
+      </div>
+      <table id="mail" class="col-lg-11 table" ng-show="app.showInbox">
+        <tr ng-repeat="message in app.inbox.messages">
+          <td width="30px">
+            <img width="30px" src="[[message.person_info[message.addresses.from.email].thumbnail]]" />
+          </td>
+          <td class="col-sm-2">[[ app.contactName(message)]]</td>
+          <td>[[ message.subject ]]</td></tr>
+        </table>
+      </div>
 {% endblock body %}
