@@ -1,18 +1,12 @@
 import json
 import re
 import os
-import logging
 
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
+from nouslog import log
 
-# Adding logging
-logger = logging.getLogger('Nous')
-logger.setLevel(logging.INFO)
-nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-nouslog.setFormatter(formatter)
-logger.addHandler(nouslog)
+logger = log()
 
 
 

@@ -1,6 +1,8 @@
 import requests
 import json
 
+requests.packages.urllib3.disable_warnings()
+
 class ToneAnalyzerService:
     """Wrapper on the Tone Analyzer service"""
 
