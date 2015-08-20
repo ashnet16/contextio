@@ -450,7 +450,7 @@ def getMessagesFromUser():
 def getInbox():
     user = dataStore.getUser(session['email'])
     userAccount = c.Account(context_io, { 'id': user["context_id"] })
-    messages = userAccount.get_messages(limit=20, include_body=1, body_type="text/html")
+    messages = userAccount.get_messages(limit=20, include_body=0, body_type="text/html")
     result = {
         'msgCount': userAccount.nb_messages,
         'messages': messages

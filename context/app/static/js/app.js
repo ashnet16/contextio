@@ -14,7 +14,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
 }).controller('AppController', ['$http', 'StatusChecker', function($http, StatusChecker) {
   var app = this;
   app.test = 'This is just a test';
-
+  var timer = null;
   app.getContacts = function() {
     $http.get('/get-contacts').
       then(function(response) {
@@ -38,12 +38,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
             app.loadInbox();
           }
         app.status = data;
-        if(!app.status.pending_sync && !app.status.pending_analysis) {
-          timer = null;
-        }
     });
   };
-  var timer = setInterval(checkStatus, 10000);
 
   app.contactText = function(contact) {
     return contact.name ? contact.name : contact.email;
@@ -51,7 +47,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
   app.contactExists = function(contact) {
     for(i=0;i<app.contacts.selectedContacts.length;i++) {
       var selected = app.contacts.selectedContacts[i];
-      if(selected) {
+      if(selected && selected.emails) {
         for(x=0;x<selected.emails.length;x++) {
           if(selected.emails[x] === contact.email) return true;
         }
@@ -105,6 +101,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         console.log(response)
         app.inbox = response.data;
         app.showInbox = true;
+        window.clearInterval(timer);
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -122,6 +119,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         app.showInbox = true;
         app.loadInbox();
       }
+      timer = setInterval(checkStatus, 10000);
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
