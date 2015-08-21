@@ -56,6 +56,18 @@ class Parser:
             self.personality[str(name)] = child['percentage']
         return
 
+    def flattenBig5(self, personality):
+        flatPersonality = {}
+        level1 = personality['tree']
+        level2 = level1['children']
+        level3 = level2[0]['children']
+        level4 = level3[0]
+        level5 = level4['children']
+        for child in level5:
+            name = child['name']
+            flatPersonality[str(name)] = child['percentage']
+        return flatPersonality
+
     def parseFullBig5(self, personalityData):
         fullBig5 = []
         personality = personalityData['personality']
@@ -80,74 +92,60 @@ class Parser:
         return fullBig5
 
     def analyzeMessages(self, msgs, **params):
-        rootJson = {}
-        rootJson['email'] = params['from_']
-        #logger.info('FROM %s', rootJson['email'])
-        rootJson['numberOfEmails'] = len(msgs)
-        isContact = False
-        if params['type_'] == 'contact':
-            isContact = True
+        """ If the messages are sent by the contact:
+            This function populates in senderJson to be sent to datastore,
+                message collection - messages sent by contact, get tone and tone avg
+                contact collection - big5 personality, num of emails
+                contact message avg tone
+            If messages are sent by the user:
+            This function computes the personality, and values in the returned json are
+            use to compute average tone and relationship score
+            Return: senderJson
+        """
+        senderJson = {}
+        senderJson['email'] = params['from_']
+        senderJson['numberOfEmails'] = len(msgs)
         self.output = {}
         message = {}
         emailMessages = []
-        msgContentList = []
         allContent = '\n'
         toneSum = 0
-        toneTracking = []
+        totalAvg = 0
         for m in msgs:
-            #if m.get(include_body=1, body_type='text/plain') == False:
-            #    continue
-            #m.get_body(type='text/plain')
             message = {}
-            message['datetime'] = m.date
+            message['datetime'] =  m.date
             message['subject'] = m.subject
-            if params['type_'] != 'masterUser':
-                message['to'] = params['to']
             message['from'] = params['from_']
             message['_id'] = m.message_id
-            if(isContact):
-                message['owner'] = params['to']
-            else:
-                message['owner'] = params['from_']
+            message['owner'] = params['owner']
+            message['to'] =params['to']
             logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
                 message['content'] = content
                 #logger.info('content %s', content)
-                msgContentList.append(content)
                 toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
                 logger.info('tone %s', toneJson)
                 message['tone'] = toneJson
-                toneAve = self.extractToneAverage(toneJson)
-                toneTracking.append(toneAve)
-                toneSum = toneSum + toneAve
-
-                # to do get average message
+                toneAvg = self.extractToneAverage(toneJson)
+                message['avgTone'] = toneAvg
+                totalAvg = totalAvg + toneAvg
                 # aggregate message content
                 allContent = allContent + content
             emailMessages.append(message)
-        if params['personality'] == True:
-            allContent = allContent.encode('utf-8')
-            personalityJson = self.personalityAnalyzer.getProfile(allContent)
-            if 'error' in personalityJson or u'error' in personalityJson:
-                rootJson['personality'] = {}
-            else:
-                self.getBig5(personalityJson)
-                rootJson['personality'] = personalityJson
-        if params['type_'] == 'masterUser':
-            rootJson['emailMessages'] = emailMessages
-        if isContact:
-            rootJson['avgTone_msgsFromContact'] = toneSum / len(msgs)
-            rootJson['toneTracking_msgsFromContact'] = toneTracking[:5]
-            rootJson['emailMessages'] = emailMessages
+
+        # Get personality Big5 of contact based on all the messages she sent
+        allContent = allContent.encode('utf-8')
+        personalityJson = self.personalityAnalyzer.getProfile(allContent)
+        if 'error' in personalityJson or u'error' in personalityJson:
+            senderJson['personality'] = {}
         else:
-            if len(msgs) > 0:
-                rootJson['avgTone_msgsFromUser'] = toneSum / len(msgs)
-            else:
-                rootJson['avgTone_msgsFromUser'] = 0
-            rootJson['toneTracking_msgsFromUser'] = toneTracking[:5]
-            rootJson['emailMessages'] = emailMessages
-        return rootJson
+            self.getBig5(personalityJson)
+            senderJson['personality'] = personalityJson
+
+        senderJson['emailMessages'] = emailMessages
+        senderJson['avgTone'] = senderJson['numberOfEmails']
+        return senderJson
 
     def getRelationship(self, userScore, contactScore):
         return (userScore + contactScore) / 2

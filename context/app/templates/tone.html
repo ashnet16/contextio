@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dc.cs')}}s">
 <style>
   /* testing out d3 tooltip */
   .d3-tip {
@@ -52,7 +53,7 @@
   <script src="{{url_for('static',filename='js/d3.js')}}"></script>
   <script>
   $.ajax({
-    url: '/get-messages',
+    url: '/get-relationships',
     type: 'POST',
     data: JSON.stringify(userEmail, null, '\t'),
     contentType: 'application/json;charset=UTF-8',
@@ -316,14 +317,9 @@
         <div style="clear:both;"></div>
 
 
-  <script src="lib/js/jquery.min.js"></script>
-  <script src="lib/js/bootstrap.min.js"></script>
-  <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-  <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
-  <script src="lib/js/queue.js"></script>
-  <script src='js/tones.js' type='text/javascript'></script>
-  <script src='lib/js/d3.tip.min.js' type='text/javascript'></script>
-  <script type="text/javascript" src="wisten/js/jquery.sticky.js"></script>
-  <script type="text/javascript" src="lib/js/global.js"></script>
+        <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+        <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
+        <script src="{{ url_for('static', filename='js/queue.js')}}"></script>
+        <script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
 {% endblock body %}

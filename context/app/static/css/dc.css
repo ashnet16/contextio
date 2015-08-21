@@ -5,10 +5,11 @@
 .dc-chart rect.bar {
     stroke: none;
     cursor: pointer;
+    fill-opacity: .5;
 }
 
 .dc-chart rect.bar:hover {
-    fill-opacity: .5;
+    fill-opacity: .6;
 }
 
 .dc-chart rect.stack1 {
