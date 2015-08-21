@@ -37,7 +37,10 @@
           <ul class="nav navbar-nav">
             <li class="active"><a href="/">Home</a></li>
             <li><a href="/mailboxes">Mailboxes</a></li>
-            <li><a href="/showMoreContacts">Contacts</a></li>
+            <li><a ng-show="!app.showInbox" href="/showMoreContacts">Contacts</a></li>
+            <li><a ng-show="!app.showInbox" href="/show-personality">Personality</a></li>
+            <li><a ng-show="!app.showInbox" href="/show-msg-tone">Message Tone</a></li>
+            <li><a ng-show="!app.showInbox" href="/show-tone">Avg Tone</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
             <li><a>Hi {{ session['firstname'] }}</a></li>

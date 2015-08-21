@@ -58,11 +58,11 @@ def runAnalysis(userEmail):
     # Put it to 10 contacts to be displayed as the limit for now
     numOfContacts = 1
     contacts = user['contacts']
-    contactRootJsonList = []
+    userFirstName = user['firstname']
+
     for contact in contacts:
         logger.info("contact in run analysis %s", contact)
-        contactAvgTone = 0
-        singleUserAvgTone = 0
+
         try:
             # we need to get user<->contact messages first
             logger.info("getting email from %s ", contact['emails'][0])
@@ -72,26 +72,28 @@ def runAnalysis(userEmail):
             errMsg = "Error Retrieving Contacts"
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
-        #logger.info("num msgs %d, %d ", contactMsgs, userMsgs)
+
         if len(contactMsgs) > 0:
-            contactRootJson = parser.analyzeMessages(contactMsgs, **{'type_': 'contact', 'from_': contact['emails'][0], 'to': userEmail, 'personality':True})
-            contactRootJsonList.append(contactRootJson)
-            contactAvgTone = contactRootJson['avgTone_msgsFromContact']
-            dataStore.savePersonality(**{ '_id': contactRootJson['email'], 'personality': contactRootJson['personality']})
-            dataStore.saveMessages(contactRootJson['emailMessages'])
+            contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contact['emails'][0], 'to': userEmail, 'owner': userEmail})
+            dataStore.savePersonality(**{ '_id': contactInfo['email'], 'personality': contactInfo['personality']})
+            dataStore.saveMessages(contactInfo['emailMessages'])
+
         if len(userMsgs) > 0:
-            userRootJson = parser.analyzeMessages(userMsgs, **{'type_': 'singleUser', 'from_': userEmail, 'to':contact['emails'][0], 'personality':False})
-            totalUserMsgs = userMsgs + totalUserMsgs
-            singleUserAvgTone = userRootJson['avgTone_msgsFromUser']
-            dataStore.saveMessages(userRootJson['emailMessages'])
-        if contactAvgTone != 0 and singleUserAvgTone != 0:
-            userRootJson['relationshipScore'] = parser.getRelationship(contactAvgTone, singleUserAvgTone)
-    userRootJson = parser.analyzeMessages(totalUserMsgs, **{'type_': 'masterUser', 'from_':userEmail, 'personality': True,'tone': True})
-    dataStore.savePersonality(**{ '_id': userEmail, 'personality': userRootJson['personality']})
-    userRootJson['contacts'] = contactRootJsonList
+            userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contact['emails'][0], 'owner': userEmail})
+            dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
+            dataStore.saveMessages(userInfo['emailMessages'])
+
+        if contactInfo['avgTone'] != 0 and userInfo['avgTone'] != 0:
+            contactInfo['relationshipScore'] = parser.getRelationship(contactInfo['avgTone'], userInfo['avgTone'])
+            userInfo['relationshipScore'] = parser.getRelationship(userInfo['avgTone'],contactInfo['avgTone'])
+
+        dataStore.saveContactInfo(userFirstName, userEmail, contactInfo)
+        # Get the reversed relationship analysis. Do not have firstname on contact so using name
+        dataStore.saveContactInfo(contact['name'], contactInfo['email'], userInfo)
+
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
-    return userRootJson
+    return contactInfo
 
 @app.route('/')
 def index():
@@ -233,6 +235,13 @@ def doAnalysis2():
     p = multiprocessing.Process(target=runAnalysis, args=(session['email'],))
     p.start()
     return json.dumps({ 'message': 'Running analysis'})
+
+@app.route('/do-analysis', methods=['POST'])
+def doAnalysisSync():
+    logger.info("in do analysis ")
+    dataStore.updateUser(session["email"], **{ 'pending_analysis': True, 'pending_contacts': False })
+    jsonResult = runAnalysis(session['email'])
+    return json.dumps(jsonResult)
 
 def getContacts(contacts):
     logger.info('info from contextio %s', contacts)
@@ -432,7 +441,7 @@ def getFullBig5():
     user = dataStore.getUser(session['email'])
     if(not user['pending_sync'] and not user['pending_contacts'] and not user['pending_analysis']):
         email = request.json['email']
-        return json.dumps(dataStore.getFullBig5(email))
+        return json.dumps({ 'name': 'Big 5', 'children': dataStore.getFullBig5(email) })
     else:
         return json.dumps(None)
 
@@ -497,6 +506,27 @@ def checkStatus():
         'pending_analysis': user['pending_analysis']
     })
 
+@app.route('/get-user-tone', methods=["GET", "POST"])
+def getUserTone():
+    userTone = dataStore.getContactToneBySender(session['email'])
+    return json.dumps(userTone)
+
+@app.route('/get-relationships', methods=["GET", "POST"])
+def getRelationships():
+    relationships = dataStore.getRelationshipsForUser(session['email'])
+    return json.dumps(relationships)
+
+@app.route('/show-personality', methods=["GET"])
+def showPersonality():
+    return render_template('personality.html')
+
+@app.route('/show-msg-tone', methods=["GET"])
+def showMsgTone():
+    return render_template('mail.html')
+
+@app.route('/show-tone', methods=["GET"])
+def showTone():
+    return render_template('tone.html')
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
 #def getMessage():

@@ -88,5 +88,88 @@ class DataStore:
         msgJson[email] = mList
         return msgJson
 
+    def getContactToneBySender(self, email):
+        messagesCollection = self.db.messages
+        messages = messagesCollection.find({'from':email})
+        result = []
+        for message in messages:
+            msg = {
+                "from": message['from'],
+                "datetime": message['datetime'],
+                "to": message['to'],
+                "owner": message['owner'],
+                "_id": message['_id'],
+                "subject": message['subject'],
+                "tone": {}
+            }
+            for tone in message['tone']['children']:
+                for child in tone['children']:
+                    msg['tone'][tone['name'] + '.' + child['name']] = child['normalized_score']
+            result.append(msg)
+        return result
+
+    def getRelationshipsForUser(self, userEmail):
+        relationshipsCollection = self.db.relationships
+        return list(relationshipsCollection.find({'hostemail':userEmail}))
+
+    def saveContactInfo(self, userFirstName, userEmail, contactInfo):
+        relationshipsCollection = self.db.relationships
+        messagesCollection = self.db.messages
+
+        msgsForTone  = messagesCollection.find({'from':contactInfo['email'], 'to': userEmail}).sort('datetime', 1)
+        mList = []
+        for m in msgsForTone:
+            mList.append(m['avgTone'])
+        print mList
+
+        limitedMessages = list(messagesCollection.aggregate([
+                     { '$match': {'from':contactInfo['email'], 'to': userEmail} },
+                     { '$sort': { 'datetime': -1 } },
+                     { '$limit': 10 },
+                     { '$group': { '_id': "$email", 'avg': { '$avg': "$avgTone" } } }
+                   ]))
+
+        for m in limitedMessages:
+            print m['avg']
+
+        normLen = len(mList)
+        if normLen > 5:
+            mList = mList[-5:]
+        else:
+            mList = mList[0:normLen]
+
+
+        print 'tonelist ', mList
+
+        personality = self.parser.flattenBig5(contactInfo['personality'])
+
+        print 'personality ', personality
+
+        contactsToInsert = {}
+        contactsToInsert['_id'] = contactInfo['email'] + '-->' + userEmail
+        contactsToInsert['recipientmail'] = contactInfo['email']
+        contactsToInsert['hostfirstname'] = userFirstName
+        contactsToInsert['hostemail'] = userEmail
+        contactsToInsert['Average tone'] = limitedMessages[0]['avg']
+        contactsToInsert['contactInfo'] = contactInfo['email']
+        contactsToInsert['relationshipScore'] = contactInfo['relationshipScore']
+        contactsToInsert['openness'] = personality['Openness']
+        contactsToInsert['conscientiousness'] = personality['Conscientiousness']
+        contactsToInsert['extraversion'] = personality['Extraversion']
+        contactsToInsert['agreableness'] = personality['Agreeableness']
+        contactsToInsert['emotional range'] = personality['Emotional range']
+
+        ctr = 0
+        for t in mList:
+            tName = 'tone' + str(ctr)
+            contactsToInsert[str(tName)] = t
+            ctr = ctr + 1
+
+        result = relationshipsCollection.update({ '_id': contactsToInsert['_id'] }, contactsToInsert, True)
+        print result
+        if result['ok'] == 1:
+            return True
+        else:
+            logger.info("Did not insert contact %s ", contactInfo['email'])
 
     #def getMessages(self, email):
