@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dc.cs')}}s">
+<style>
+/* testing out d3 tooltip */
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 8px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+#number-box {
+  background: orange;
+  width: 200px;
+  font-size: 64px;
+  text-align: center;
+  padding-top: 63px;
+  padding-bottom: 63px;
+  height: 74px;
+}
+#number-boxnew {
+  background: green;
+  width: 200px;
+  font-size: 64px;
+  text-align: center;
+  padding-top: 63px;
+  padding-bottom: 63px;
+  height: 74px;
+}
+</style>
+  <script src="{{url_for('static',filename='js/d3.js')}}"></script>
+  <script>
+  $.ajax({
+    url: '/get-user-tone',
+    type: 'POST',
+    data: JSON.stringify(userEmail, null, '\t'),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(response) {
+      // Since its a csv file we need to format the data a bit.
+
+      var subjectviewsData = JSON.parse(response);
+
+  subjectviewsData.forEach(function(d) {
+      d.datetime = new Date(d.datetime * 1000);
+  });
+  console.log(subjectviewsData);
+
+  /*var dateFormat = d3.time.format("%m/%d/%Y");
+          subjectviewsData.forEach(function(d) {
+          d.datetime = dateFormat.parse(d.datetime);
+                  d.datetime.setDate(1);
+      });
+  */
+
+
+
+      //Create a Crossfilter instance
+      var ndx = crossfilter(subjectviewsData);
+      //Define Dimensions
+      var hostName = ndx.dimension(function(d) { return d.from; });
+      var subject = ndx.dimension(function(d) { return d.subject; });
+      var contact = ndx.dimension(function(d) { return d.to; });
+      var dateTime = ndx.dimension(function(d) { return d.datetime; });
+
+
+      var wtConfident = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Confident"]; });
+      var wtTentative = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Tentative"]; });
+      var wtAnalytical = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Analytical"]; });
+
+      var stCons = ndx.dimension(function(d) { return d["tone"]["Social Tone.Conscientiousness"]; });
+      var stAgree = ndx.dimension(function(d) { return d["tone"]["Social Tone.Agreeableness"]; });
+      var stOpen = ndx.dimension(function(d) { return d["tone"]["Social Tone.Openness"]; });
+
+      var etNegative = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Negative"]; });
+      var etAnger = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Anger"]; });
+      var etCheer = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Cheerfulness"]; });
+
+      var wtcGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Writing Tone.Confident"];
+      });
+      var wttGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Writing Tone.Tentative"];
+      });
+      var wtaGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Writing Tone.Analytical"];
+      });
+      var stcGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Social Tone.Conscientiousness"];
+      });
+      var staGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Social Tone.Agreeableness"];
+      });
+      var stoGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Social Tone.Openness"];
+      });
+      var etnGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Emotion Tone.Negative"];
+      });
+      var etaGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Emotion Tone.Anger"];
+      });
+      var etcGroup = contact.group().reduceSum(function(d) {
+          return d["tone"]["Emotion Tone.Cheerfulness"];
+      });
+
+
+      var stcGroup2 = dateTime.group().reduceSum(function(d) {
+          return d["tone"]["Social Tone.Conscientiousness"];
+      });
+
+
+
+      var minDate = dateTime.bottom(1)[0].datetime;
+      var maxDate = dateTime.top(1)[0].datetime;
+
+  console.log(minDate);
+  console.log(maxDate);
+
+
+       var all = ndx.groupAll();
+      //Charts
+      var writingToneLine = dc.lineChart("#writing-tone", "subjectView");
+      var socialToneLine = dc.lineChart("#social-tone", "subjectView");
+      var emotionalToneLine = dc.lineChart("#emotional-tone", "subjectView");
+      var totalToneLine = dc.lineChart("#total-tone", "subjectView");
+
+       totalToneLine
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 30, bottom: 30, left: 50})
+          .dimension(dateTime)
+          .group(stcGroup2,"Conscientiousness")
+          .brushOn(false)
+          .renderArea(false)
+          .transitionDuration(500)
+          .x(d3.time.scale().domain([minDate, maxDate]))
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(70).y(20).itemHeight(8).gap(4))
+          .xAxis().tickFormat(d3.time. format('%d/%m/%y'));
+
+       emotionalToneLine
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .dimension(contact)
+          .group(etnGroup,"Emotion- Negative")
+          .stack(etaGroup,"Emotion- Anger")
+          .stack(etcGroup,"Emotion- Cheerfulness")
+          .brushOn(false)
+          .renderArea(true)
+          .transitionDuration(500)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(70).y(20).itemHeight(8).gap(4))
+          .xAxisLabel("Contact")
+          .yAxis().ticks(8);
+
+
+
+        socialToneLine
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .dimension(contact)
+          .group(stcGroup,"Social- Conscientiousness")
+          .stack(staGroup,"Social- Agreeableness")
+          .stack(stoGroup,"Social- Openness")
+          .brushOn(false)
+          .renderArea(true)
+          .transitionDuration(500)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(70).y(20).itemHeight(8).gap(4))
+          .xAxisLabel("Contact")
+          .yAxis().ticks(8);
+
+
+       writingToneLine
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .dimension(contact)
+          .group(wtcGroup,"Writing- Confident")
+          .stack(wttGroup,"Writing- Tentative")
+          .stack(wtaGroup,"Writing- Analytical")
+          .brushOn(false)
+          .renderArea(true)
+          .transitionDuration(500)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(70).y(20).itemHeight(8).gap(4))
+          .xAxisLabel("Contact")
+          .yAxis().ticks(8);
+
+        /* mailActivity
+              //.width(350)
+              .height(220)
+              .radius(100)
+              .innerRadius(40)
+              .transitionDuration(1000)
+              .dimension(contact)
+              .group(mailPieGroup)
+              .ordinalColors(["#2bbf9f","#31c6c7","#eb5768","#f6ab60"])
+              .legend(dc.legend().x(300).y(20).itemHeight(8).gap(4))
+              .label(function(d) { return d.key +" (" + Math.floor(d.value / all.value() * 4) + "%)"; });
+          */
+          dc.dataCount("#row-selection","subjectView")
+          .dimension(ndx)
+          .group(all);
+
+          dc.renderAll("subjectView");
+
+   },
+   error: function(error) {
+    console.log(error);
+   }
+ });
+</script>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="row">
+
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              Writing Tone |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="writing-tone" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              Social Tone |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="social-tone" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              Emotional Tone |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="emotional-tone" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              Total Tone |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="total-tone" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+
+        <div style="clear:both;"></div>
+
+
+  <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
+  <script src="{{ url_for('static', filename='js/queue.js')}}"></script>
+  <script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
+{% endblock body %}

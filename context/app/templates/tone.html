@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+  /* testing out d3 tooltip */
+  .d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 8px;
+  }
+
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+    box-sizing: border-box;
+    display: inline;
+    font-size: 10px;
+    width: 100%;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+  }
+
+  /* Style northward tooltips differently */
+  .d3-tip.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
+  }
+  #number-box {
+    background: orange;
+    width: 200px;
+    font-size: 64px;
+    text-align: center;
+    padding-top: 63px;
+    padding-bottom: 63px;
+    height: 74px;
+  }
+  #number-boxnew {
+    background: green;
+    width: 200px;
+    font-size: 64px;
+    text-align: center;
+    padding-top: 63px;
+    padding-bottom: 63px;
+    height: 74px;
+  }
+</style>
+  <script src="{{url_for('static',filename='js/d3.js')}}"></script>
+  <script>
+  $.ajax({
+    url: '/get-messages',
+    type: 'POST',
+    data: JSON.stringify(userEmail, null, '\t'),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(response) {
+      // Since its a csv file we need to format the data a bit.
+
+      //Clean projectsJson data
+      var subjectviewsData = JSON.parse(response);;
+  console.log(subjectviewsData);
+      //Create a Crossfilter instance
+      var ndx = crossfilter(subjectviewsData);
+  console.log(ndx);
+      //Define Dimensions
+      var hostName = ndx.dimension(function(d) { return d.hostfirstname; });
+      var hostMail = ndx.dimension(function(d) { return d.hostemail; });
+      var contact = ndx.dimension(function(d) { return d.recipientmail; });
+      var relScore = ndx.dimension(function(d) { return d.relationshipScore; });
+      var openness = ndx.dimension(function(d) { return d["openness"]; });
+      var emotionalRange = ndx.dimension(function(d) { return d["emotional range"]; });
+      var extraversion = ndx.dimension(function(d) { return d["extraversion"]; });
+      var conscientiousness = ndx.dimension(function(d) { return d["conscientiousness"]; });
+      var agreableness = ndx.dimension(function(d) { return d["agreableness"]; });
+      var averageTone = ndx.dimension(function(d) { return d["Average tone"]; });
+      var Tone0 = ndx.dimension(function(d) { return d["tone0"]; });
+      var Tone1 = ndx.dimension(function(d) { return d["tone1"]; });
+      var Tone2 = ndx.dimension(function(d) { return d["tone2"]; });
+      var Tone3 = ndx.dimension(function(d) { return d["tone3"]; });
+      var Tone4 = ndx.dimension(function(d) { return d["tone4"]; });
+      var mailCount = ndx.dimension(function(d) { return d["numberofEmails"]; });
+
+
+      var opennessGroup = contact.group().reduceSum(function(d) {
+          return d.openness;
+      });
+      var emotionalRangeGroup = contact.group().reduceSum(function(d) {
+          return d["emotional range"];
+      });
+      var extraversionGroup = contact.group().reduceSum(function(d) {
+          return d.extraversion;
+      });
+      var conscientiousnessGroup = contact.group().reduceSum(function(d) {
+          return d.conscientiousness;
+      });
+      var agreablenessGroup = contact.group().reduceSum(function(d) {
+          return d.agreableness;
+      });
+
+      var mailPieGroup = contact.group().reduceSum(function(d) {
+          return d["numberofEmails"]
+      });
+
+      var mailAllCount = mailCount.groupAll();
+      //Calculate metrics
+      //var contactGroup = contact.group();
+      //var pieSubjectStatus = subjectStatus.group();
+      //var genderStatus = gender.group();
+
+      var relScoreGroup = contact.group().reduceSum(function(d) {
+          return d.relationshipScore;
+      });
+      var avgToneGroup = contact.group().reduceSum(function(d) {
+          return d["Average tone"];
+      });
+
+      var toneZeroGroup = contact.group().reduceSum(function(d) {
+          return d["tone0"];
+      });
+
+      var toneOneGroup = contact.group().reduceSum(function(d) {
+          return d["tone1"];
+      });
+
+      var toneTwoGroup = contact.group().reduceSum(function(d) {
+          return d["tone2"];
+      });
+
+      var toneThreeGroup = contact.group().reduceSum(function(d) {
+          return d["tone3"];
+      });
+
+      var toneFourGroup = contact.group().reduceSum(function(d) {
+          return d["tone4"];
+      });
+
+
+
+       var all = ndx.groupAll();
+      //Charts
+      var siteLevelChart = dc.barChart("#contacts-stack", "subjectView");
+     var mailActivity = dc.pieChart("#mail-info", "subjectView");
+     var relationToneLine = dc.lineChart("#relation-tone", "subjectView")
+     var tonalBehaviour = dc.lineChart("#tonal-behaviour", "subjectView")
+
+
+       tonalBehaviour
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .dimension(contact)
+          .group(toneZeroGroup,"Tone 0")
+          .stack(toneOneGroup,"Tone 1")
+          .stack(toneTwoGroup,"Tone 2")
+          .stack(toneThreeGroup,"Tone 3")
+          .stack(toneFourGroup,"Tone 4")
+          .brushOn(false)
+          .renderArea(false)
+          .transitionDuration(500)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(495).y(20).itemHeight(8).gap(4))
+          .xAxisLabel("Contact")
+          .yAxis().ticks(8);
+
+
+
+      relationToneLine
+          //.width(600)
+          .height(220)
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .dimension(contact)
+          .group(relScoreGroup,"Relationship Score")
+          .stack(avgToneGroup,"Average Tone")
+          .brushOn(false)
+          .renderArea(false)
+          .transitionDuration(500)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .legend(dc.legend().x(495).y(20).itemHeight(8).gap(4))
+          .xAxisLabel("Contact")
+          .yAxis().ticks(8);
+
+
+
+      siteLevelChart
+          //.width(400)
+          .height(220)
+          .transitionDuration(1000)
+          .dimension(contact)
+          .group(opennessGroup,"Openness")
+          .stack(emotionalRangeGroup,"Emotional Range")
+          .stack(extraversionGroup,"Extraversion")
+          .stack(conscientiousnessGroup,"Conscientiousness")
+          .stack(agreablenessGroup,"Agreeableness")
+          .margins({top: 10, right: 50, bottom: 30, left: 50})
+          .centerBar(false)
+          .gap(40)
+          .elasticY(true)
+          .renderHorizontalGridLines(true)
+          .renderVerticalGridLines(true)
+          .x(d3.scale.ordinal().domain(contact))
+          .xUnits(dc.units.ordinal)
+          .legend(dc.legend().x(600).y(10).itemHeight(8).gap(4))
+          .ordering(opennessGroup);
+        //  .ordering(function(d){return d.value;})
+         // .yAxis().tickFormat(d3.format("s"))
+
+         mailActivity
+              //.width(350)
+              .height(220)
+              .radius(100)
+              .innerRadius(40)
+              .transitionDuration(1000)
+              .dimension(contact)
+              .group(mailPieGroup)
+              .ordinalColors(["#2bbf9f","#31c6c7","#eb5768","#f6ab60"])
+              .legend(dc.legend().x(300).y(20).itemHeight(8).gap(4))
+              .label(function(d) { return d.key +" (" + Math.floor(d.value / all.value() * 4) + "%)"; });
+
+          dc.dataCount("#row-selection","subjectView")
+          .dimension(ndx)
+          .group(all);
+
+          dc.renderAll("subjectView");
+
+   },
+   error: function(error) {
+    console.log(error);
+   }
+ });
+</script>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="row">
+
+
+        <!-- site level count bar -->
+        <div class="col-sm-8">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              contacts-stack |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="contacts-stack" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+        <!-- site level count bar -->
+        <div class="col-sm-4">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              mail-info |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="mail-info" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              contacts-stack |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="relation-tone" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+        <!-- site level count bar -->
+        <div class="col-sm-6">
+          <div class="chart-wrapper">
+            <div class="chart-title">
+              mail-info-tonal-behaviour |
+
+              <span>
+                <a href='javascript:siteLevelChart.filterAll("subjectView");dc.redrawAll("subjectView");'>Reset</a>
+              </span>
+            </div>
+            <div class="chart-stage">
+              <div id="tonal-behaviour" style="height:auto; width: auto;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- site level count bar -->
+
+
+
+
+        <div style="clear:both;"></div>
+
+
+  <script src="lib/js/jquery.min.js"></script>
+  <script src="lib/js/bootstrap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
+  <script src="lib/js/queue.js"></script>
+  <script src='js/tones.js' type='text/javascript'></script>
+  <script src='lib/js/d3.tip.min.js' type='text/javascript'></script>
+  <script type="text/javascript" src="wisten/js/jquery.sticky.js"></script>
+  <script type="text/javascript" src="lib/js/global.js"></script>
+{% endblock body %}

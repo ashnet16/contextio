@@ -88,5 +88,23 @@ class DataStore:
         msgJson[email] = mList
         return msgJson
 
-
+    def getContactToneBySender(self, email):
+        messagesCollection = self.db.messages
+        messages = messagesCollection.find({'from':email})
+        result = []
+        for message in messages:
+            msg = {
+                "from": message['from'],
+                "datetime": message['datetime'],
+                "to": message['to'],
+                "owner": message['owner'],
+                "_id": message['_id'],
+                "subject": message['subject'],
+                "tone": {}
+            }
+            for tone in message['tone']['children']:
+                for child in tone['children']:
+                    msg['tone'][tone['name'] + '.' + child['name']] = child['normalized_score']
+            result.append(msg)
+        return result
     #def getMessages(self, email):

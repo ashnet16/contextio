@@ -75,7 +75,7 @@ class Parser:
                 subFacet['name'] = s['name']
                 subFacet['percentage'] = s['percentage']
                 subFacets.append(subFacet)
-            oneBig5['subFacets'] = subFacets
+            oneBig5['children'] = subFacets
             fullBig5.append(oneBig5)
         return fullBig5
 
@@ -176,7 +176,7 @@ class Parser:
             toneType['name']
             level2 = toneType['children']
             subElement = {}
-            for typeElements in level2: 
+            for typeElements in level2:
                 subElement[(typeElements['name'])] = typeElements['normalized_score']
                 #subElements.append(subElement)
             toneJson[(toneType['name'])] = subElement
@@ -187,4 +187,3 @@ class Parser:
         pTree = personality['personality']['tree']
         for p in pTree:
             pChild = p['child']
-
