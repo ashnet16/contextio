@@ -9,8 +9,11 @@ def log():
 
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
-    #nouslog = logging.FileHandler(os.path.join(os.path.abspath(('/var/www/contextio/context/app/logs/nous.log'))),'a')
+    # Check if server path exists if not use local path
+    if(os.path.isdir("/var/www/contextio/context/app/logs")):
+        nouslog = logging.FileHandler(os.path.join(os.path.abspath(('/var/www/contextio/context/app/logs/nous.log'))),'a')
+    else:
+        nouslog = logging.FileHandler(os.path.join(os.path.abspath(('logs/nous.log'))),'a')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     nouslog.setFormatter(formatter)
     logger.addHandler(nouslog)
