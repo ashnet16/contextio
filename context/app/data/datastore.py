@@ -167,7 +167,7 @@ class DataStore:
 
         result = relationshipsCollection.update({ '_id': contactsToInsert['_id'] }, contactsToInsert, True)
         print result
-        if result['nModified'] > 0:
+        if result['ok'] == 1:
             return True
         else:
             logger.info("Did not insert contact %s ", contactInfo['email'])

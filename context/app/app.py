@@ -85,8 +85,11 @@ def runAnalysis(userEmail):
 
         if contactInfo['avgTone'] != 0 and userInfo['avgTone'] != 0:
             contactInfo['relationshipScore'] = parser.getRelationship(contactInfo['avgTone'], userInfo['avgTone'])
+            userInfo['relationshipScore'] = parser.getRelationship(userInfo['avgTone'],contactInfo['avgTone'])
 
         dataStore.saveContactInfo(userFirstName, userEmail, contactInfo)
+        # Get the reversed relationship analysis. Do not have firstname on contact so using name
+        dataStore.saveContactInfo(contact['name'], contactInfo['email'], userInfo)
 
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
