@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row" ng-controller="ToneController as dashboard">
+  <div class="col-sm-12">
+    <h2>Tone Dashboard</h2>
+    <hr />
+    <div class="row">
+      <div class="col-md-6">
+        <h4 class="pull-left">How do I communicate</h4>
+        <div class="pull-right form-inline">
+          <div class="form-group">
+            <label class="radio-inline">
+                <input type="radio" name="optionsRadios" id="optionsRadios1"
+                  value="user" checked ng-model="dashboard.toneSwitch"
+                  ng-change="dashboard.getContactTone()">
+                in my emails
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="radio-inline">
+                <input type="radio" name="optionsRadios" id="optionsRadios2"
+                  value="contact" ng-model="dashboard.toneSwitch"
+                  ng-change="dashboard.getContactTone()">
+                with
+            </label>
+          </div>
+          <div class="form-group">
+            <select class="form-control pull-right" id="selectContact"
+              ng-model="dashboard.selectedContact"
+              ng-options="contact as contact.name for contact in dashboard.contacts"
+              ng-change="dashboard.getContactTone()"
+              ng-disabled="dashboard.toneSwitch=='user'">
+              <option value="">----Select a contact----</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        Tone for all user emails or to selected contact
+        <table class="table">
+          <tr><td colspan="3"><h3>Emotional Tone</h3></td></tr>
+          <tr><td>&nbsp;</td><td>Cheerfulness</td><td>[[ dashboard.toneRollup.Cheerfulness/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Negativity</td><td>[[ dashboard.toneRollup.Negative/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Anger</td><td>[[ dashboard.toneRollup.Anger/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td colspan="3"><h3>Social Tone</h3></td></tr>
+          <tr><td>&nbsp;</td><td>Agreeableness</td><td>[[ dashboard.toneRollup.Agreeableness/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Conscientiousness</td><td>[[ dashboard.toneRollup.Conscientiousness/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Openness</td><td>[[ dashboard.toneRollup.Openness/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td colspan="3"><h3>Writing Tone</h3></td></tr>
+          <tr><td>&nbsp;</td><td>Confident</td><td>[[ dashboard.toneRollup.Confident/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Analytical</td><td>[[ dashboard.toneRollup.Analytical/dashboard.selectedTone.length | percentage ]]</td></tr>
+          <tr><td>&nbsp;</td><td>Tentative</td><td>[[ dashboard.toneRollup.Tentative/dashboard.selectedTone.length | percentage ]]</td></tr>
+        </table>
+        <p>[[dashboard.selectedTone]]</p>
+      </div>
+      <div class="col-md-6">
+        Timeline for the selected facet
+        <p>[[dashboard.selectedFacet]]</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}
