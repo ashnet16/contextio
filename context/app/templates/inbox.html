@@ -11,7 +11,7 @@
           <tr ng-repeat="contact in app.contacts.contacts">
             <td class="col-sm-10">[[ app.contactText(contact)]]</td>
             <td><a class="btn btn-xs btn-default pull-right" ng-click="app.toggleContact(contact)">
-              <span ng-show="app.contactExists(contact)">Remove</span>
+              <span ng-show="app.contactExists(contact, [[$index]])">Remove</span>
               <span ng-show="!app.contactExists(contact)">Add</span></a>
             </td>
           </tr>

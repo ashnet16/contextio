@@ -64,20 +64,34 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     return message.addresses.from.name ? message.addresses.from.name : message.address.from.email;
   }
 
-  app.toggleContact = function(contact) {
+  app.toggleContact = function(contact, index) {
     var contactEmailObj = {
       "email":contact.email
     };
-    $http.post('/selectContact', contactEmailObj).
-      then(function(response) {
-        // this callback will be called asynchronously
-        console.log(response)
-        app.contacts.selectedContacts.push(response.data);
-        contact.added = true;
-      }, function(response) {
-        // called asynchronously if an error occurs
-        // or server returns response with an error status.
-      });
+    if(app.contactExists(contact)) {
+      $http.post('/removeContact', { contact: { name: contact.name, emails: contact.emails } }).
+        then(function(response) {
+          // this callback will be called asynchronously
+          if(response.data)
+            app.contacts.selectedContacts.splice(index, 1);
+          // TODO display an error to the user
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    } else {
+      $http.post('/selectContact', contactEmailObj).
+        then(function(response) {
+          // this callback will be called asynchronously
+          console.log(response)
+          app.contacts.selectedContacts.push(response.data);
+          contact.added = true;
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    }
+
   }
 
   app.doAnalysis = function() {

@@ -73,6 +73,8 @@ def runAnalysis(userEmail):
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
 
+        print 'there are ' + str(len(userMsgs)) + ' message to this contact'
+        print 'there are ' + str(len(contactMsgs)) + ' message from this contact'
         if len(contactMsgs) > 0:
             contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contact['emails'][0], 'to': userEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': contactInfo['email'], 'personality': contactInfo['personality']})
@@ -87,9 +89,9 @@ def runAnalysis(userEmail):
             contactInfo['relationshipScore'] = parser.getRelationship(contactInfo['avgTone'], userInfo['avgTone'])
             userInfo['relationshipScore'] = parser.getRelationship(userInfo['avgTone'],contactInfo['avgTone'])
 
-        dataStore.saveContactInfo(userFirstName, userEmail, contactInfo)
+        dataStore.saveContactInfo(userEmail, userFirstName, userEmail, contactInfo)
         # Get the reversed relationship analysis. Do not have firstname on contact so using name
-        dataStore.saveContactInfo(contact['name'], contactInfo['email'], userInfo)
+        dataStore.saveContactInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
 
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
@@ -370,6 +372,16 @@ def selectContact():
     contact = { 'name': userSelectedContact.name, 'emails': [contactEmail] }
     dataStore.addUserContact(user['_id'],  **contact)
     return json.dumps(contact)
+
+@app.route('/removeContact', methods=["POST"])
+def removeContact():
+    user = dataStore.getUser(session['email'])
+    contact = request.json['contact']
+    if dataStore.removeUserContact(user['_id'], **contact):
+        dataStore.deleteContactData(user['_id'], **contact)
+        return json.dumps(True)
+    else:
+        return json.dumps(False)
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
