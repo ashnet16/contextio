@@ -42,12 +42,31 @@ function removeSource(label) {
      }
    });
 };
+function enable(label,status) {
+    var data = {
+        "label":label,
+        "status":status
+    };
+    $.ajax({
+        url: '/enable',
+        type: 'POST',
+        data: JSON.stringify(data, null, '\t'),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response) {
+          var result = JSON.parse(response);
+          window.location = '/mailboxes';
+      },
+      error: function(error) {
+        console.log(error);
+        }
+      });
+};
 </script>
   <h2> List of mailboxes </h2>
   <table>
     <thead><tr><td>Username</td><td>Status</td><td></td></tr></thead>
   {% for source in sources %}
-    <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></tr>
+      <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td><td><a href="javascript: enable('{{ source["label"]}}',status)">Enable</button></td></tr>
   {% endfor %}
 </table>
   <div>

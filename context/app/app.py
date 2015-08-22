@@ -593,5 +593,16 @@ def showToneDashboard():
 
     # Get messages from the mongodb where the from = email
 
+@app.route('/enable', methods=["POST"]) #Test
+def enable():
+    if request.method == 'POST':
+        label = request.json["label"]
+        account = c.Account(context_io, { 'id': session["context_id"]})
+        source = c.Source(account, { 'label': label , 'status' : 1 })
+        logger.info(source)
+        return json.dumps(source)
+
+
+
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)
