@@ -322,7 +322,7 @@ function buildTonesD3Chart(data) {
           <div class="form-group">
             <select class="form-control pull-right" id="selectContact"
               ng-model="dashboard.selectedContact"
-              ng-options="contact as contact.name for contact in dashboard.contacts"
+              ng-options="contact as (contact.name ? contact.name : contact.emails[0]) for contact in dashboard.contacts"
               ng-change="dashboard.getContactTone()"
               ng-disabled="dashboard.toneSwitch=='user'">
               <option value="">--- Select a contact ---</option>

@@ -14,7 +14,7 @@
           <label for="selectContact">Select a Contact</label>
           <select class="form-control" id="selectContact"
             ng-model="dashboard.selectedContact"
-            ng-options="contact as contact.name for contact in dashboard.contacts"
+            ng-options="contact as (contact.name ? contact.name : contact.emails[0]) for contact in dashboard.contacts"
             ng-change="dashboard.getContactPersonality()">
           </select>
         </div>
