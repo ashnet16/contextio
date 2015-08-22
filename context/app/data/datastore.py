@@ -154,7 +154,6 @@ class DataStore:
         mList = []
         for m in msgsForTone:
             mList.append(m['avgTone'])
-        print mList
 
         limitedMessages = list(messagesCollection.aggregate([
                      { '$match': {'from':contactInfo['email'], 'to': userEmail} },
@@ -163,17 +162,11 @@ class DataStore:
                      { '$group': { '_id': "$email", 'avg': { '$avg': "$avgTone" } } }
                    ]))
 
-        for m in limitedMessages:
-            print m['avg']
-
         normLen = len(mList)
         if normLen > 5:
             mList = mList[-5:]
         else:
             mList = mList[0:normLen]
-
-
-        print 'tonelist ', mList
 
         if('tree' in contactInfo['personality']):
             personality = self.parser.flattenBig5(contactInfo['personality'])
@@ -186,12 +179,13 @@ class DataStore:
                 'Emotional range': 0,
                 'relationshipScore': 0
             }
+        avgTone = limitedMessages[0]['avg'] if len(limitedMessages) > 0 else 0
         contactsToInsert = {}
         contactsToInsert['_id'] = contactInfo['email'] + '-->' + userEmail
         contactsToInsert['recipientmail'] = contactInfo['email']
         contactsToInsert['hostfirstname'] = userFirstName
         contactsToInsert['hostemail'] = userEmail
-        contactsToInsert['Average tone'] = limitedMessages[0]['avg']
+        contactsToInsert['Average tone'] = avgTone
         contactsToInsert['contactInfo'] = contactInfo['email']
         contactsToInsert['relationshipScore'] = contactInfo['relationshipScore']
         contactsToInsert['openness'] = personality['Openness']
@@ -207,8 +201,8 @@ class DataStore:
             contactsToInsert[str(tName)] = t
             ctr = ctr + 1
 
+        print 'saving relationship' + contactInfo['email'] + '-->' + userEmail
         result = relationshipsCollection.update({ '_id': contactsToInsert['_id'] }, contactsToInsert, True)
-        print result
         if result['ok'] == 1:
             return True
         else:
