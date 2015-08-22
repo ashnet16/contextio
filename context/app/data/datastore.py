@@ -43,6 +43,20 @@ class DataStore:
         result = users.update_one({ '_id': id }, { '$push': { 'contacts': contact } })
         return result == 1
 
+    def removeUserContact(self, id, **contact):
+        users = self.db.users
+        result = users.update_one({ '_id': id }, { '$pull': { 'contacts': contact } }).modified_count
+        return result == 1
+
+    def deleteContactData(self, id, **contact):
+        messagesCollection = self.db.messages
+        messagesCollection.remove({ 'from': id, 'to': { '$in': contact['emails'] }, 'owner': id })
+        messagesCollection.remove({ 'to': id, 'from': { '$in': contact['emails'] }, 'owner': id })
+        relationshipsCollection = self.db.relationships
+        relationshipsCollection.remove({ '_id': contact['emails'][0] + '-->' + id, 'owner': id })
+        print id + '-->' + contact['emails'][0]
+        relationshipsCollection.remove({ '_id': id + '-->' + contact['emails'][0], 'owner': id })
+
     def saveMessages(self, messages):
         messagesCollection = self.db.messages
         counter = 0
@@ -132,7 +146,7 @@ class DataStore:
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
 
-    def saveContactInfo(self, userFirstName, userEmail, contactInfo):
+    def saveContactInfo(self, owner, userFirstName, userEmail, contactInfo):
         relationshipsCollection = self.db.relationships
         messagesCollection = self.db.messages
 
@@ -161,10 +175,17 @@ class DataStore:
 
         print 'tonelist ', mList
 
-        personality = self.parser.flattenBig5(contactInfo['personality'])
-
-        print 'personality ', personality
-
+        if('tree' in contactInfo['personality']):
+            personality = self.parser.flattenBig5(contactInfo['personality'])
+        else:
+            personality = {
+                'Openness': 0,
+                'Conscientiousness': 0,
+                'Extraversion': 0,
+                'Agreeableness': 0,
+                'Emotional range': 0,
+                'relationshipScore': 0
+            }
         contactsToInsert = {}
         contactsToInsert['_id'] = contactInfo['email'] + '-->' + userEmail
         contactsToInsert['recipientmail'] = contactInfo['email']
@@ -178,6 +199,7 @@ class DataStore:
         contactsToInsert['extraversion'] = personality['Extraversion']
         contactsToInsert['agreableness'] = personality['Agreeableness']
         contactsToInsert['emotional range'] = personality['Emotional range']
+        contactsToInsert['owner'] = owner
 
         ctr = 0
         for t in mList:
