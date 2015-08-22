@@ -73,22 +73,41 @@ def runAnalysis(userEmail):
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
 
-        print 'there are ' + str(len(userMsgs)) + ' message to this contact'
-        print 'there are ' + str(len(contactMsgs)) + ' message from this contact'
+        print 'there are ' + str(len(userMsgs)) + ' messages from ' + userEmail + ' to ' + contact['emails'][0] + ' this contact'
+        print 'there are ' + str(len(contactMsgs)) + ' messages to ' + userEmail + ' from ' + contact['emails'][0] + ' this contact'
         if len(contactMsgs) > 0:
             contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contact['emails'][0], 'to': userEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': contactInfo['email'], 'personality': contactInfo['personality']})
             dataStore.saveMessages(contactInfo['emailMessages'])
+        else:
+            contactInfo = {
+                'numberOfEmails': len(contactMsgs),
+                'emailMessages': [{}],
+                'avgTone': 0,
+                'email': contact['emails'][0],
+                'personality': {}
+            }
 
         if len(userMsgs) > 0:
             userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contact['emails'][0], 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
             dataStore.saveMessages(userInfo['emailMessages'])
+        else:
+            userInfo = {
+                'numberOfEmails': len(userMsgs),
+                'emailMessages': [{}],
+                'avgTone': 0,
+                'email': userEmail,
+                'personality': {}
+            }
 
         if contactInfo['avgTone'] != 0 and userInfo['avgTone'] != 0:
             contactInfo['relationshipScore'] = parser.getRelationship(contactInfo['avgTone'], userInfo['avgTone'])
             userInfo['relationshipScore'] = parser.getRelationship(userInfo['avgTone'],contactInfo['avgTone'])
-
+        else:
+            contactInfo['relationshipScore'] = 0
+            userInfo['relationshipScore'] = 0
+            
         dataStore.saveContactInfo(userEmail, userFirstName, userEmail, contactInfo)
         # Get the reversed relationship analysis. Do not have firstname on contact so using name
         dataStore.saveContactInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
