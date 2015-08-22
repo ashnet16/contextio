@@ -477,6 +477,11 @@ def getUserContacts():
     }
     return json.dumps(result, default=lambda o: o.__dict__)
 
+@app.route('/get-selected-contacts', methods=["GET"])
+def getSelectedContacts():
+    user = dataStore.getUser(session['email'])
+    return json.dumps(user['contacts'])
+
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
     user = dataStore.getUser(session['email'])
@@ -506,6 +511,15 @@ def checkStatus():
         'pending_analysis': user['pending_analysis']
     })
 
+@app.route('/get-tone', methods=["GET", "POST"])
+def getTone():
+    if('to' in request.json):
+        to = request.json['to']
+        userTone = dataStore.getContactToneBySenderAndReceiver(session['email'], to)
+    else:
+        userTone = dataStore.getContactToneBySender(session['email'])
+    return json.dumps(userTone)
+
 @app.route('/get-user-tone', methods=["GET", "POST"])
 def getUserTone():
     userTone = dataStore.getContactToneBySender(session['email'])
@@ -527,6 +541,14 @@ def showMsgTone():
 @app.route('/show-tone', methods=["GET"])
 def showTone():
     return render_template('tone.html')
+
+@app.route('/personality-dashboard', methods=["GET"])
+def showPersonalityDashboard():
+    return render_template('personality-dashboard.html')
+
+@app.route('/tone-dashboard', methods=["GET"])
+def showToneDashboard():
+    return render_template('tone-dashboard.html')
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
 #def getMessage():

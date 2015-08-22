@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row" ng-controller="PersonalityController as dashboard">
+  <div class="col-sm-12">
+    <h2>Personality Dashboard</h2>
+    <hr />
+    <div class="row">
+      <div class="col-md-6">
+        <h3>The Big 5</h3>
+
+      </div>
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="selectContact">Select a Contact</label>
+          <select class="form-control" id="selectContact"
+            ng-model="dashboard.selectedContact"
+            ng-options="contact as contact.name for contact in dashboard.contacts"
+            ng-change="dashboard.getContactPersonality()">
+          </select>
+        </div>
+      </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      Big 5 for user goes here
+      <p>[[dashboard.userPersonality]]</p>
+    </div>
+    <div class="col-md-6">
+      Big 5 for selected contact goes here
+      <p>[[dashboard.contactPersonality]]</p>
+    </div>
+  </div>
+  <hr />
+  <div class="row">
+    <div class="col-md-12">
+      <p>Select one of the Big 5 traits to see a detailed breakdown</p>
+    </div>
+    <div class="col-md-6">
+
+    </div>
+    <div class="col-md-6">
+
+    </div>
+</div>
+{% endblock body %}

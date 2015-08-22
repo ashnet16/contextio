@@ -124,7 +124,105 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       // called asynchronously if an error occurs
       // or server returns response with an error status.
     });
-}]);
+}]).controller('PersonalityController', ['$http', function($http) {
+  var dashboard = this;
+
+  dashboard.getContactPersonality = function() {
+    $http.post('/get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
+      then(function(response) {
+        // this callback will be called asynchronously
+        dashboard.contactPersonality = response.data;
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
+
+  $http.post('/get-fullBig5', userEmail).
+    then(function(response) {
+      // this callback will be called asynchronously
+      dashboard.userPersonality = response.data;
+    }, function(response) {
+      // called asynchronously if an error occurs
+      // or server returns response with an error status.
+    });
+    $http.get('/get-selected-contacts').
+      then(function(response) {
+        // this callback will be called asynchronously
+        dashboard.contacts = response.data;
+        dashboard.selectedContact = dashboard.contacts[0]
+        dashboard.getContactPersonality();
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+}]).controller('ToneController', ['$http', function($http) {
+  var dashboard = this;
+  dashboard.toneSwitch = 'user';
+  dashboard.rollupTone = function() {
+    dashboard.toneRollup = {
+      Agreeableness: 0,
+      Conscientiousness: 0,
+      Openness: 0,
+      Tentative: 0,
+      Analytical: 0,
+      Confident: 0,
+      Negative: 0,
+      Anger: 0,
+      Cheerfulness: 0,
+    };
+    for(i=0;i<dashboard.selectedTone.length;i++) {
+      var item = dashboard.selectedTone[i].tone
+      dashboard.toneRollup.Agreeableness += item['Social Tone.Agreeableness'];
+      dashboard.toneRollup.Conscientiousness += item['Social Tone.Conscientiousness'];
+      dashboard.toneRollup.Openness += item['Social Tone.Openness'];
+      dashboard.toneRollup.Tentative += item['Writing Tone.Tentative'];
+      dashboard.toneRollup.Analytical += item['Writing Tone.Analytical'];
+      dashboard.toneRollup.Confident += item['Writing Tone.Confident'];
+      dashboard.toneRollup.Negative += item['Emotion Tone.Negative'];
+      dashboard.toneRollup.Anger += item['Emotion Tone.Anger'];
+      dashboard.toneRollup.Cheerfulness += item['Emotion Tone.Cheerfulness'];
+    }
+  }
+  dashboard.getContactTone = function() {
+    var data = {}
+    if(dashboard.toneSwitch==='contact') {
+      if(!dashboard.selectedContact) return dashboard.selectedTone = null;
+      data.to = dashboard.selectedContact.emails[0]
+    }
+    $http.post('/get-tone', data).
+      then(function(response) {
+        // this callback will be called asynchronously
+        dashboard.selectedTone = response.data;
+        dashboard.rollupTone();
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
+
+  $http.post('/get-tone', {}).
+    then(function(response) {
+      // this callback will be called asynchronously
+      dashboard.selectedTone = response.data;
+      dashboard.rollupTone();
+    }, function(response) {
+      // called asynchronously if an error occurs
+      // or server returns response with an error status.
+    });
+    $http.get('/get-selected-contacts').
+      then(function(response) {
+        // this callback will be called asynchronously
+        dashboard.contacts = response.data;
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+}]).filter('percentage', ['$filter', function ($filter) {
+  return function (input, decimals) {
+    return $filter('number')(input * 100, decimals) + '%';
+  };
+}]);;
 
 var contacts = []
 var timespan = 100;
