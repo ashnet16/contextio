@@ -11,7 +11,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       }
 
   }
-}).controller('AppController', ['$http', 'StatusChecker', function($http, StatusChecker) {
+}).controller('InboxController', ['$http', 'StatusChecker', function($http, StatusChecker) {
   var app = this;
   app.test = 'This is just a test';
   var timer = null;
@@ -195,6 +195,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
         dashboard.rollupTone();
+        buildTonesD3Chart(dashboard.selectedTone);
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -206,6 +207,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       // this callback will be called asynchronously
       dashboard.selectedTone = response.data;
       dashboard.rollupTone();
+      buildTonesD3Chart(dashboard.selectedTone);
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
