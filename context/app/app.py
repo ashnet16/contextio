@@ -388,8 +388,28 @@ def selectContact():
     userSelectedContact = c.Contact(userAccount,{'email':contactEmail})
     userSelectedContact.get()
     user = dataStore.getUser(session['email'])
+
+    # == START embedded in USER
     contact = { 'name': userSelectedContact.name, 'emails': [contactEmail] }
     dataStore.addUserContact(user['_id'],  **contact)
+    # == END embedded in USER
+
+    print 'userSelectedContact %s ', userSelectedContact
+    # == START new Contact Document
+    contactDB = {   'name': userSelectedContact.name, 
+                    'emails': [contactEmail],
+                    'email': [contactEmail][0],
+                    'is_selected': True,
+                    'thumbnail':userSelectedContact.name,
+                    'last_received':userSelectedContact.last_received,
+                    'last_sent':userSelectedContact.last_sent,
+                    'count':userSelectedContact.count
+                }
+    contactId = session['email'] + '_' + [contactEmail][0]
+    print 'contactId %s ', contactId
+    dataStore.addContact(contactId, **contactDB )
+    # == END new Contact Document
+
     return json.dumps(contact)
 
 @app.route('/removeContact', methods=["POST"])

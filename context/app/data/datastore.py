@@ -142,6 +142,11 @@ class DataStore:
             result.append(msg)
         return result
 
+    def addContact(self, contactId, **contact):
+        contactsCollection = self.db.contacts
+        newContact = contactsCollection.update( {'_id': contactId}, {"$set": contact}, upsert = True)
+        return newContact
+        
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
