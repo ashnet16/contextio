@@ -57,26 +57,28 @@ def runAnalysis(userEmail):
     #cList = []
     # Put it to 10 contacts to be displayed as the limit for now
     numOfContacts = 1
-    contacts = user['contacts']
+    # contacts is the list of selected contacts in DB
+    contacts = dataStore.getContactsByUser(userEmail, True)
     userFirstName = user['firstname']
 
     for contact in contacts:
         logger.info("contact in run analysis %s", contact)
-
+        contactEmail = contact['email']
         try:
             # we need to get user<->contact messages first
-            logger.info("getting email from %s ", contact['emails'][0])
-            userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
+            logger.info("getting email from %s ", contactEmail)
+
+            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=20, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contactEmail, limit=20, include_body=1, body_type="text/plain")
         except:
             errMsg = "Error Retrieving Contacts"
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
 
-        print 'there are ' + str(len(userMsgs)) + ' messages from ' + userEmail + ' to ' + contact['emails'][0] + ' this contact'
-        print 'there are ' + str(len(contactMsgs)) + ' messages to ' + userEmail + ' from ' + contact['emails'][0] + ' this contact'
+        print 'there are ' + str(len(userMsgs)) + ' messages from ' + userEmail + ' to ' + contactEmail + ' this contact'
+        print 'there are ' + str(len(contactMsgs)) + ' messages to ' + userEmail + ' from ' + contactEmail + ' this contact'
         if len(contactMsgs) > 0:
-            contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contact['emails'][0], 'to': userEmail, 'owner': userEmail})
+            contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contactEmail, 'to': userEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': contactInfo['email'], 'personality': contactInfo['personality']})
             dataStore.saveMessages(contactInfo['emailMessages'])
         else:
@@ -89,7 +91,7 @@ def runAnalysis(userEmail):
             }
 
         if len(userMsgs) > 0:
-            userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contact['emails'][0], 'owner': userEmail})
+            userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contactEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
             dataStore.saveMessages(userInfo['emailMessages'])
         else:
@@ -114,7 +116,7 @@ def runAnalysis(userEmail):
 
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
-    return contactInfo
+    return 
 
 @app.route('/')
 def index():
@@ -518,9 +520,14 @@ def getMessagesFromUser():
 def getInbox():
     user = dataStore.getUser(session['email'])
     userAccount = c.Account(context_io, { 'id': user["context_id"] })
-    messages = userAccount.get_messages(limit=20, include_body=0, body_type="text/html")
+    # get messages of selected contact
+    contacts = dataStore.getContactsByUser(session['email'], True)
+    messages = []
+    for contact in contacts:
+        contactEmail = contact['email']
+        messages = messages + userAccount.get_messages(limit=20, include_body=0, email=contactEmail, body_type="text/html")
     result = {
-        'msgCount': userAccount.nb_messages,
+        'msgCount': len(messages),
         'messages': messages
     }
     return json.dumps(result, default=lambda o: o.__dict__)

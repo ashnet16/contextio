@@ -155,13 +155,14 @@ class DataStore:
 
     def getContactsByUser(self,  userEmail, selected=None):
         contactsCollection = self.db.contacts
+        print 'getContactsByUser ',  userEmail
         if selected is None:
             # get all contacts
-            return contactsCollection.find( {'owner': userEmail} )
+            return contactsCollection.find( {'user': userEmail} )
         elif selected is True:
-            return contactsCollection.find( {'owner': userEmail, 'is_selected': True} )
+            return contactsCollection.find( {'user': userEmail, 'is_selected': True} )
         elif selected is False:
-            return contactsCollection.find( {'owner': userEmail, 'is_selected': False} )
+            return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
 
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
