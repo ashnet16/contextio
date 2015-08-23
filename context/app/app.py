@@ -232,8 +232,8 @@ def inbox():
     # End of localhost hack
 
     #try:
-    getContacts(account.get_contacts(limit = 1))
-    logger.info("calling get contacts" )
+    # getContacts(account.get_contacts(limit = 1))
+    #logger.info("calling get contacts" )
     #except:
     #    session.clear()
     #    return render_template('error.html', errorMsg="Error Retrieving Contact On Account Creation")
@@ -241,15 +241,15 @@ def inbox():
     logger.info("pending contacts %d", user['pending_contacts'] )
     logger.info("pending analysis %d", user['pending_analysis'] )
     if(user['pending_sync']):
-        return render_template('inbox.html', contactList=[], user=user)
+        return render_template('inbox.html', user=user)
     elif(user['pending_contacts']):
-        return render_template('inbox.html', contactList=session['contacts'], user=user)
+        return render_template('inbox.html', user=user)
     elif(user['pending_analysis']):
         logger.info("pending analysis contact %s", session['contacts'] )
-        return render_template('inbox.html', contactList=session['contacts'], user=user)
+        return render_template('inbox.html', user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html', contactList=user['contacts'], user=user)
+        return render_template('inbox.html',  user=user)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
