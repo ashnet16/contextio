@@ -57,6 +57,7 @@ class DataStore:
         print id + '-->' + contact['emails'][0]
         relationshipsCollection.remove({ '_id': id + '-->' + contact['emails'][0], 'owner': id })
 
+
     def saveMessages(self, messages):
         messagesCollection = self.db.messages
         counter = 0
@@ -145,6 +146,11 @@ class DataStore:
     def addContact(self, contactId, **contact):
         contactsCollection = self.db.contacts
         newContact = contactsCollection.update( {'_id': contactId}, {"$set": contact}, upsert = True)
+        return newContact
+
+    def updateContactStatus(self, contactId, status):
+        contactsCollection = self.db.contacts
+        newContact = contactsCollection.update( {'_id': contactId}, {'$set': { 'is_selected': status }} )
         return newContact
         
     def getRelationshipsForUser(self, userEmail):

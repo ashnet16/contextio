@@ -417,7 +417,11 @@ def removeContact():
     user = dataStore.getUser(session['email'])
     contact = request.json['contact']
     if dataStore.removeUserContact(user['_id'], **contact):
+        # we might not want to delete all contact info, since removeContact
+        # in this context is just unselecting the contact
         dataStore.deleteContactData(user['_id'], **contact)
+        contactId = session['email'] + '_' + contact['emails'][0]
+        dataStore.updateContactStatus(contactId, False)
         return json.dumps(True)
     else:
         return json.dumps(False)
