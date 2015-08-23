@@ -108,9 +108,9 @@ def runAnalysis(userEmail):
             contactInfo['relationshipScore'] = 0
             userInfo['relationshipScore'] = 0
             
-        dataStore.saveContactInfo(userEmail, userFirstName, userEmail, contactInfo)
+        dataStore.saveRelationshipInfo(userEmail, userFirstName, userEmail, contactInfo)
         # Get the reversed relationship analysis. Do not have firstname on contact so using name
-        dataStore.saveContactInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
+        dataStore.saveRelationshipInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
 
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'

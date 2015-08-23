@@ -151,7 +151,7 @@ class DataStore:
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
 
-    def saveContactInfo(self, owner, userFirstName, userEmail, contactInfo):
+    def saveRelationshipInfo(self, owner, userFirstName, userEmail, contactInfo):
         relationshipsCollection = self.db.relationships
         messagesCollection = self.db.messages
 
