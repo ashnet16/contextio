@@ -84,9 +84,9 @@ class DataStore:
         print email
         personalityJson = {}
         personalityCollection = self.db.personality
-        personalityData = personalityCollection.find({'_id':email},{'personality':1})
-        if(personalityData[0]):
-            return self.parser.parseFullBig5(personalityData[0])
+        personalityData = personalityCollection.find_one({'_id':email},{'personality':1})
+        if(personalityData):
+            return self.parser.parseFullBig5(personalityData)
         else:
             return None
 
