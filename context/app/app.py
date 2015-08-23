@@ -371,8 +371,11 @@ def mailboxes():
 
 # for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js
 # and then displays contacts based on count * offset * 10
-@app.route('/showMoreContacts')
+@app.route('/showMoreContacts', methods=["POST"])
 def showMoreContacts():
+    # use the DB call instead of the ContextIO call
+    contacts = datastore.getContactsByUser(session['email'])
+
     account = c.Account(context_io, { 'id': session["context_id"] })
     numOfContacts = 30
     contacts = account.get_contacts(limit=numOfContacts)
@@ -399,6 +402,7 @@ def selectContact():
     contactDB = {   'name': userSelectedContact.name, 
                     'emails': [contactEmail],
                     'email': [contactEmail][0],
+                    'user': session['email'],
                     'is_selected': True,
                     'thumbnail':userSelectedContact.name,
                     'last_received':userSelectedContact.last_received,
@@ -531,6 +535,17 @@ def getUserContacts():
         'selectedContacts': user['contacts']
     }
     return json.dumps(result, default=lambda o: o.__dict__)
+
+@app.route('/get-contacts-db', methods=["GET"])
+def getUserContactsDB():
+    contacts = dataStore.getContactsByUser(session['email'])
+    selectedContacts = dataStore.getContactsByUser(session['email'], True)
+    result = {
+        'contacts': contacts,
+        'selectedContacts': selectedContacts
+    }
+    return json.dumps(result, default=lambda o: o.__dict__)
+
 
 @app.route('/get-selected-contacts', methods=["GET"])
 def getSelectedContacts():

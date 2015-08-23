@@ -152,7 +152,17 @@ class DataStore:
         contactsCollection = self.db.contacts
         newContact = contactsCollection.update( {'_id': contactId}, {'$set': { 'is_selected': status }} )
         return newContact
-        
+
+    def getContactsByUser(self,  userEmail, selected=None):
+        contactsCollection = self.db.contacts
+        if selected is None:
+            # get all contacts
+            return contactsCollection.find( {'owner': userEmail} )
+        elif selected is True:
+            return contactsCollection.find( {'owner': userEmail, 'is_selected': True} )
+        elif selected is False:
+            return contactsCollection.find( {'owner': userEmail, 'is_selected': False} )
+
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
