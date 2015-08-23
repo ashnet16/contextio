@@ -22,3 +22,11 @@ body {
 .navbar-nav>.active>a {
 	opacity:.6;
 }
+
+#box td {
+    padding-right: 50px;
+}
+
+#add {
+    margin-top: 20px;
+}
