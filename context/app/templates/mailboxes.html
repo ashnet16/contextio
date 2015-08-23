@@ -62,19 +62,30 @@ function enable(label,status) {
       });
 };
 </script>
-  <h2> List of mailboxes </h2>
-  <table>
-    <thead><tr><td>Username</td><td>Status</td><td></td></tr></thead>
-  {% for source in sources %}
-      <tr><td>{{ source["username"] }}</td><td>{{ source["status"] }}</td><td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td><td><a href="javascript: enable('{{ source["label"]}}',status)">Enable</button></td></tr>
-  {% endfor %}
-</table>
-  <div>
+<h2> List of mailboxes </h2>
+<div>
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Status</th>
+        </tr>
+        {% for source in sources %}
+        <tr id = "box">
+            <td>{{ source["username"] }}</td>
+            <td>{{ source["status"] }}</td>
+            <td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td>
+            <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
+        </tr>
+        {% endfor %}
+        
+    </table>
+</div>
+<div>
     <p>Enter the email address for the mailbox you would like to add</p>
     <div>
-      <label>Email:</label><br/>
-      <input id="email" type="email" />
+        <label>Email:</label><br/>
+        <input id="email" type="email" />
     </div>
     <button id="addSource" type="button">Add</button>
-  </div>
+</div>
 {% endblock body %}
