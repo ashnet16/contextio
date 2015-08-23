@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+:wq{% extends "base.html" %}
 {% block body %}
 <script>
 $(document).ready(function() {
@@ -68,20 +68,24 @@ function enable(label,status) {
         <tr>
             <th>Username</th>
             <th>Status</th>
+            <th>Option</th>
         </tr>
         {% for source in sources %}
         <tr id = "box">
             <td>{{ source["username"] }}</td>
             <td>{{ source["status"] }}</td>
             <td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td>
-            <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
+            {%if source["status"] == "disabled"%}
+              <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
+              {%endif%}
+            
         </tr>
         {% endfor %}
         
     </table>
 </div>
 <div>
-    <p>Enter the email address for the mailbox you would like to add</p>
+    <p id = "add">Enter the email address for the mailbox you would like to add:</p>
     <div>
         <label>Email:</label><br/>
         <input id="email" type="email" />

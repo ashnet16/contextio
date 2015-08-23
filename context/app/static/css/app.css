@@ -24,5 +24,9 @@ body {
 }
 
 #box td {
-    padding-right: 20px;
+    padding-right: 50px;
+}
+
+#add {
+    margin-top: 20px;
 }
