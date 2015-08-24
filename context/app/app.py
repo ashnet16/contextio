@@ -162,7 +162,8 @@ def login(provider_name):
                 'contacts': [],
                 'pending_sync': True,
                 'pending_contacts': False,
-                'pending_analysis': False
+                'pending_analysis': False,
+                'refresh_from_db': False
             })
 
             session['firstname'] = result.user.first_name;
@@ -229,6 +230,7 @@ def inbox():
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
+            user['refresh_from_db'] = False
     # End of localhost hack
 
     #try:
@@ -375,6 +377,9 @@ def mailboxes():
 # and then displays contacts based on count * offset * 10
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
+    user = dataStore.getUser(session['email'])
+    user['refresh_from_db'] = True
+    dataStore.updateUser(user['_id'], **{ 'refresh_from_db': True})
     return render_template('moreContacts.html')
      
 
@@ -485,7 +490,9 @@ def getInbox():
     # get messages of selected contact
     contacts = dataStore.getContactsByUser(session['email'], True)
     messages = []
+    latestDate = 0
     for contact in contacts:
+        #latestDate = contact['last_sent'] ? contact['last_received']
         contactEmail = contact['email']
         messages = messages + userAccount.get_messages(limit=20, include_body=0, email=contactEmail, body_type="text/html")
     result = {
@@ -500,6 +507,7 @@ def getUserContacts():
     userAccount = c.Account(context_io, { 'id': user["context_id"] })
     contacts = userAccount.get_contacts()
     for contact in contacts:
+        contact.get()
         contactDB = {'name': contact.name, 
                     'emails': contact.emails,
                     'email': contact.emails[0],
@@ -525,6 +533,7 @@ def getUserContactsDB():
     contacts = dataStore.getContactsByUser(session['email'])
     selectedContacts =[]
     allContacts = []
+    print 'Calling get-contacts-from-db'
     for contact in contacts:
         if contact['is_selected'] == True:
             selectedContacts.append(contact)
@@ -567,12 +576,13 @@ def checkStatus():
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
-            user['pending_anlysis'] = False
     # End of localhost hack
+    print 'check-status ', user['refresh_from_db']
     return json.dumps({
         'pending_sync': user['pending_sync'],
         'pending_contacts': user['pending_contacts'],
-        'pending_analysis': user['pending_analysis']
+        'pending_analysis': user['pending_analysis'],
+        'refresh_from_db': user['refresh_from_db']
     })
 
 @app.route('/get-tone', methods=["GET", "POST"])

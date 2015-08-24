@@ -27,7 +27,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       });
   }
 
-  app.getContactsDB = function() {
+   app.getContactsDB = function() {
     $http.get('/get-contacts-db').
       then(function(response) {
         // this callback will be called asynchronously
@@ -46,9 +46,12 @@ angular.module('nousApp', []).config(function($interpolateProvider){
           app.getContacts();
         }
         if(app.status.pending_analysis == true
-          && data.pending_analysis == false) {
+          && data.pending_analysis == false && data.refresh_from_db == false) {
             app.loadInbox();
           }
+        if (data.refresh_from_db == true) {
+          app.getContactsDB();
+        }
         app.status = data;
     });
   };
@@ -141,7 +144,9 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       app.status = response.data;
       if(app.status.pending_contacts) {
         app.getContacts();
-      } else if(!app.status.pending_sync && !app.status.pending_analysis) {
+      } else if (app.status.refresh_from_db){
+        app.getContactsDB();
+      }else if(!app.status.pending_sync && !app.status.pending_analysis && !app.status.refresh_from_db) {
         app.showInbox = true;
         app.loadInbox();
       }
@@ -251,6 +256,11 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     return $filter('number')(input * 100, decimals) + '%';
   };
 }]);;
+
+nousApp.controller('Contacts', ['$scope', function($scope) {
+  $scope.greeting = 'Hola!';
+}]);
+
 
 var contacts = []
 var timespan = 100;

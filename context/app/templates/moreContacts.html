@@ -7,9 +7,6 @@
         <div class="text-center">
           <p>To allow us to analyze your mailbox effectively you need to select one or more contacts to include</p>
         </div>
-        <div>
-          <a class="btn btn-primary pull-right" ng-show="app.contacts" ng-click="app.getContactsDB()">Get Contacts</a>
-        </div>
         <table class="table">
           <tr ng-repeat="contact in app.contacts.contacts">
             <td class="col-sm-10">[[ app.contactText(contact)]]</td>
