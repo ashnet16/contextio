@@ -16,6 +16,7 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+
 toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
 
@@ -153,6 +154,7 @@ def login(provider_name):
         if result.user:
             result.user.update()
             # Create a user. If the user already exists it simply return the user
+            #app_id = nous_id()
             user = dataStore.createUser(**{
                 '_id': result.user.email,
                 'firstname': result.user.first_name,
@@ -160,20 +162,22 @@ def login(provider_name):
                 'contacts': [],
                 'pending_sync': True,
                 'pending_contacts': False,
-                'pending_analysis': False
+                'pending_analysis': False,
+          
             })
 
             session['firstname'] = result.user.first_name;
             session['email'] = result.user.email;
-
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
             session['credentials'] = result.user.credentials.serialize()
+            #session['app_id'] = result.user.app_id;
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
                 return redirect(url_for('inbox'))
             else:
+                #If a user is signing up using username and password, they shouldn't be directed to inbox. They should be directed to add a contact.
                 session["context_id"] = createContextAccount(**{
                     'email': result.user.email,
                     'first_name': result.user.first_name,
@@ -312,12 +316,13 @@ def sendUserInfo():
     password = request.json["password"]
     # Check if the user exists
     user = dataStore.getUser(email);
+    error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
     if user != None:
         # Compare password
         if pbkdf2_sha256.verify(password, user["password"]) == True:
             session["context_id"] = user["context_id"]
         else:
-            raise Exception('Invalid account details!')
+            return render_template('userLogin.html',error=error)
     else:
         user = dataStore.createUser(**{
             '_id': email,
@@ -350,7 +355,9 @@ def addMailbox():
         result = account.post_connect_token(**{
         "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
-        "first_name": session["firstname"]
+        "first_name": session["firstname"],
+        #"app_id": session['app_id'] #Ashley testing
+         
         })
         return json.dumps(result);
 

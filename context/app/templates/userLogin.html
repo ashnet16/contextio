@@ -18,6 +18,9 @@
 	</head>
 	
 	<body>
+        {% if error %}
+        <p class="flash"><strong>Error:</strong> {{ error }}
+        {% endif %}
 		<!-- The Login form -->
 		<div class="cont">
 		  <div class="demo">
