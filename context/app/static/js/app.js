@@ -27,6 +27,18 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       });
   }
 
+  app.getContactsDB = function() {
+    $http.get('/get-contacts-db').
+      then(function(response) {
+        // this callback will be called asynchronously
+        console.log(response)
+        app.contacts = response.data;
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
+
   var checkStatus = function () {
     StatusChecker.poll('/check-status').then(function(data){
         if(data.pending_contacts &&

@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from pymongo.collection import ReturnDocument 
 from helpers.parser import Parser
 import json
 
@@ -150,7 +151,8 @@ class DataStore:
 
     def updateContactStatus(self, contactId, status):
         contactsCollection = self.db.contacts
-        newContact = contactsCollection.update( {'_id': contactId}, {'$set': { 'is_selected': status }} )
+        newContact = contactsCollection.find_one_and_update( {'_id': contactId}, {'$set': { 'is_selected': status }}, return_document=ReturnDocument.AFTER )
+        print 'find and update ', newContact
         return newContact
 
     def getContactsByUser(self,  userEmail, selected=None):

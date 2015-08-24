@@ -266,16 +266,16 @@ def doAnalysisSync():
     jsonResult = runAnalysis(session['email'])
     return json.dumps(jsonResult)
 
-def getContacts(contacts):
-    logger.info('info from contextio %s', contacts)
-    contactList = []
-    for contact in contacts:
-        contactList.append(contact.email)
-        logger.info('in get contacts %s ', contact.email)
+#def getContacts(contacts):
+#    logger.info('info from contextio %s', contacts)
+#    contactList = []
+#    for contact in contacts:
+#        contactList.append(contact.email)
+#        logger.info('in get contacts %s ', contact.email)
     #Lory: add to DB -- may be changed if we have the selected contacts
     #if emailAdd is not None:
     #    dataStore.updateUser(emailAdd, **{'contacts': contactList})
-    session['contacts'] = contactList
+#    session['contacts'] = contactList
 
 def createContextAccount(**args):
     # check if the account exists
@@ -373,65 +373,27 @@ def mailboxes():
 
 # for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js
 # and then displays contacts based on count * offset * 10
-@app.route('/showMoreContacts', methods=["POST"])
+@app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
-    # use the DB call instead of the ContextIO call
-    contacts = datastore.getContactsByUser(session['email'])
-
-    account = c.Account(context_io, { 'id': session["context_id"] })
-    numOfContacts = 30
-    contacts = account.get_contacts(limit=numOfContacts)
-    contactList = []
-    for contactObj in contacts:
-        contactList.append(contactObj.email)
-    return render_template('moreContacts.html', listOfContacts = contactList)
+    return render_template('moreContacts.html')
+     
 
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
-    userAccount = c.Account(context_io, { 'id': session["context_id"] })
     contactEmail = request.json["email"]
-    userSelectedContact = c.Contact(userAccount,{'email':contactEmail})
-    userSelectedContact.get()
-    user = dataStore.getUser(session['email'])
-
-    # == START embedded in USER
-    contact = { 'name': userSelectedContact.name, 'emails': [contactEmail] }
-    dataStore.addUserContact(user['_id'],  **contact)
-    # == END embedded in USER
-
-    print 'userSelectedContact %s ', userSelectedContact
-    # == START new Contact Document
-    contactDB = {   'name': userSelectedContact.name, 
-                    'emails': [contactEmail],
-                    'email': [contactEmail][0],
-                    'user': session['email'],
-                    'is_selected': True,
-                    'thumbnail':userSelectedContact.name,
-                    'last_received':userSelectedContact.last_received,
-                    'last_sent':userSelectedContact.last_sent,
-                    'count':userSelectedContact.count
-                }
-    contactId = session['email'] + '_' + [contactEmail][0]
-    print 'contactId %s ', contactId
-    dataStore.addContact(contactId, **contactDB )
-    # == END new Contact Document
-
-    return json.dumps(contact)
-
+    contactId = session['email'] + '_' + contactEmail
+    return json.dumps(dataStore.updateContactStatus(contactId, True))
+     
 @app.route('/removeContact', methods=["POST"])
 def removeContact():
     user = dataStore.getUser(session['email'])
     contact = request.json['contact']
-    if dataStore.removeUserContact(user['_id'], **contact):
-        # we might not want to delete all contact info, since removeContact
-        # in this context is just unselecting the contact
-        dataStore.deleteContactData(user['_id'], **contact)
-        contactId = session['email'] + '_' + contact['emails'][0]
-        dataStore.updateContactStatus(contactId, False)
-        return json.dumps(True)
-    else:
-        return json.dumps(False)
-
+    #if dataStore.removeUserContact(user['_id'], **contact):
+    dataStore.deleteContactData(user['_id'], **contact)
+    contactId = session['email'] + '_' + contact['emails'][0]
+    dataStore.updateContactStatus(contactId, False)
+    return json.dumps(True)
+    
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
 	IMAPSettings = {"source_type":source,"email":email}
@@ -537,18 +499,39 @@ def getUserContacts():
     user = dataStore.getUser(session['email'])
     userAccount = c.Account(context_io, { 'id': user["context_id"] })
     contacts = userAccount.get_contacts()
+    for contact in contacts:
+        contactDB = {'name': contact.name, 
+                    'emails': contact.emails,
+                    'email': contact.emails[0],
+                    'user': session['email'],
+                    'is_selected': False,
+                    'thumbnail':contact.name,
+                    'last_received':contact.last_received,
+                    'last_sent':contact.last_sent,
+                    'count':contact.count
+                }
+        contactId = session['email'] + '_' + contact.emails[0]
+        print 'contactId %s ', contactId
+        dataStore.addContact(contactId, **contactDB )
+
     result = {
         'contacts': contacts,
-        'selectedContacts': user['contacts']
+        'selectedContacts': []
     }
     return json.dumps(result, default=lambda o: o.__dict__)
 
 @app.route('/get-contacts-db', methods=["GET"])
 def getUserContactsDB():
     contacts = dataStore.getContactsByUser(session['email'])
-    selectedContacts = dataStore.getContactsByUser(session['email'], True)
+    selectedContacts =[]
+    allContacts = []
+    for contact in contacts:
+        if contact['is_selected'] == True:
+            selectedContacts.append(contact)
+        allContacts.append(contact)
+        
     result = {
-        'contacts': contacts,
+        'contacts': allContacts,
         'selectedContacts': selectedContacts
     }
     return json.dumps(result, default=lambda o: o.__dict__)
@@ -556,9 +539,13 @@ def getUserContactsDB():
 
 @app.route('/get-selected-contacts', methods=["GET"])
 def getSelectedContacts():
-    user = dataStore.getUser(session['email'])
-    return json.dumps(user['contacts'])
-
+    selectedContacts = []
+    contacts = dataStore.getContactsByUser(session['email'], True)
+    for contact in contacts:
+        if contact['is_selected'] == True:
+            selectedContacts.append(contact)
+    return json.dumps(selectedContacts)
+    
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
     user = dataStore.getUser(session['email'])
@@ -626,6 +613,7 @@ def showPersonalityDashboard():
 @app.route('/tone-dashboard', methods=["GET"])
 def showToneDashboard():
     return render_template('tone-dashboard.html')
+
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
 #def getMessage():
