@@ -16,6 +16,7 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+# import itertools
 
 toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
@@ -141,7 +142,7 @@ def login(provider_name):
         else:
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
-                print credentials.valid
+                print 'lkj', credentials.valid
                 if credentials.valid == True:
                     return redirect(url_for('inbox'))
     # Create an OAuth2 request for the provider
@@ -230,7 +231,6 @@ def inbox():
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
         if(isOkay):
-
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
@@ -389,7 +389,6 @@ def mailboxes():
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     user = dataStore.getUser(session['email'])
-    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True})
     return render_template('moreContacts.html')
 
 @app.route('/selectContact', methods=["POST"])
@@ -607,8 +606,10 @@ def getTone():
     if('to' in request.json):
         to = request.json['to']
         userTone = dataStore.getContactToneBySenderAndReceiver(session['email'], to)
+        # print userTone
     else:
         userTone = dataStore.getContactToneBySender(session['email'])
+        # print userTone
     return json.dumps(userTone)
 
 @app.route('/get-user-tone', methods=["GET", "POST"])

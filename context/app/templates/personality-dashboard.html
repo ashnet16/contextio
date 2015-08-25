@@ -1,5 +1,164 @@
 {% extends "base.html" %}
 {% block body %}
+<style>
+.bar {
+  fill: #0C090A;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis {
+  font: 8px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+#bar-x-axis path {
+  display: none;
+}
+
+.breakdown-title {
+  text-align: center;
+  font-size: 18px;
+}
+
+.list-group-item {
+
+}
+</style>
+<script>
+function personalityChart(data, divClass) {
+console.log(data)
+// data for the update
+var dataset = data.children
+
+// initial data
+var data = data.children[0].children
+
+var margin = {top: 30, right: 20, bottom: 150, left: 40},
+    width = $(".col-md-6").width() - margin.right - margin.left
+    height = 300  
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .tickSize(0) // remove tick lines
+    .orient("bottom")
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(10, "%");
+
+var svg = d3.select("." + divClass).append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+  // scale the data
+  x.domain(data.map(function(d) { return d.name; }));
+  y.domain([0, d3.max(data, function(d) { return d.percentage; })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("id","bar-x-axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".45em")
+
+
+  // create the initial bars
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.name); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d.percentage); })
+      .attr("height", function(d) { return height - y(d.percentage); });
+
+
+  function updateData(i) {
+    
+    // each of the Big 5 id elements corresponds to it's index within the data
+    data = dataset[i].children
+    
+    // scale the new data
+    x.domain(data.map(function(d) { return d.name; }));
+    y.domain([0, d3.max(data, function(d) { return d.percentage; })]);
+
+  svg.select('.x.axis')
+      .call(xAxis);
+
+
+  svg.select('.y.axis')
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".51em")
+        
+    var bar = svg.selectAll("rect").data(data, function(d) {return d.percentage});
+
+        // initialize the new bars
+        bar.enter()
+          .append("rect")
+          .attr("class", "bar")
+
+
+        // transition to new data
+        bar.transition()
+          .duration(100)
+          .ease("quad")
+          .attr("x", function(d) { return x(d.name); })
+          .attr("width", x.rangeBand())
+          .attr("y", function(d) { return y(d.percentage); })
+          .attr("height", function(d) { return height - y(d.percentage); })
+
+        // remove the previous data
+        bar.exit()
+          .transition()
+          .duration(200)
+          .ease("linear")
+          .attr("width", 0)
+          .remove();
+
+  }   
+
+        $('.list-group-item').click(function(){
+          // each of the Big 5 id elements corresponds to it's index within the data
+          i = $(this)[0].id
+          category = $(this)[0].textContent.toUpperCase()
+          $(".breakdown-title").text('Breaking it down: ' + category)
+          updateData(i)
+        })
+
+
+
+ } // end personalityChart
+
+</script>
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
     <h2>Personality Dashboard</h2>
@@ -22,24 +181,45 @@
   </div>
   <div class="row">
     <div class="col-md-6">
-      Big 5 for user goes here
-      <p>[[dashboard.userPersonality]]</p>
+      <!-- Big 5 for user goes here -->
+      <!-- <p>[[dashboard.userPersonality]]</p> -->
+            <ul class="list-group">
+              <button type="button" class="list-group-item user" id="0" onclick="this.blur();">Openness</button>
+              <button type="button" class="list-group-item user" id="1" onclick="this.blur();">Conscientiousness</button>
+              <button type="button" class="list-group-item user" id="2" onclick="this.blur();">Extraversion</button>
+              <button type="button" class="list-group-item user" id="3" onclick="this.blur();">Agreeableness</button>
+              <button type="button" class="list-group-item user" id="4" onclick="this.blur();">Emotional Range</button>
+            </ul>
     </div>
     <div class="col-md-6">
-      Big 5 for selected contact goes here
-      <p>[[dashboard.contactPersonality]]</p>
+      <!-- Big 5 for selected contact goes here -->
+      <!-- <p>[[dashboard.contactPersonality]]</p> -->
+            <ul class="list-group" >
+              <button type="button" class="list-group-item contact" id="0" onclick="this.blur();">Openness</button>
+              <button type="button" class="list-group-item contact" id="1" onclick="this.blur();">Conscientiousness</button>
+              <button type="button" class="list-group-item contact" id="2" onclick="this.blur();">Extraversion</button>
+              <button type="button" class="list-group-item contact" id="3" onclick="this.blur();">Agreeableness</button>
+              <button type="button" class="list-group-item contact" id="4" onclick="this.blur();">Emotional Range</button>
+            </ul>
     </div>
   </div>
   <hr />
   <div class="row">
-    <div class="col-md-12">
-      <p>Select one of the Big 5 traits to see a detailed breakdown</p>
+    <div class="col-md-12 breakdown-title">
+      <p>Breaking it down: OPENNESS</p>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-6 user-chart">
+
 
     </div>
-    <div class="col-md-6">
+    <div class="col-md-6 contact-chart">
 
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+<script src="{{ url_for('static', filename='js/dc.js')}}"></script>
+<script src="{{ url_for('static', filename='js/queue.js')}}"></script>
+<script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
 {% endblock body %}
