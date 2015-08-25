@@ -231,7 +231,6 @@ def inbox():
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
         if(isOkay):
-
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
@@ -390,7 +389,6 @@ def mailboxes():
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     user = dataStore.getUser(session['email'])
-    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True})
     return render_template('moreContacts.html')
 
 @app.route('/selectContact', methods=["POST"])
