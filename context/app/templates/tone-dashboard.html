@@ -31,7 +31,27 @@
     top: 100%;
     left: 0;
   }
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.area {
+    fill: lightsteelblue;
+    stroke-width: 0;
+}
 </style>
 <script>
 // function buildTonesD3Chart(data) {
@@ -53,7 +73,7 @@
 
 
 //   //Create a Crossfilter instance
-//   var ndx = crossfilter(subjectviewsData);
+  // var ndx = crossfilter(subjectviewsData);
 //   //Define Dimensions
 //   var hostName = ndx.dimension(function(d) { return d.from; });
 //   var subject = ndx.dimension(function(d) { return d.subject; });
@@ -294,6 +314,213 @@
 //       dc.renderAll("nettone");
 //   });
 // }
+
+// d3 chart -----------------------------
+
+
+
+function toneChart(data) {
+
+function groupByAvg(data) {
+/* it was quicker for me to roll my own function to group and average the data 
+ by date than to learn crossfilter.js although crossfilter is likely much more efficient */
+
+  
+ // initialize the array that will contain the flattened data
+  flattenedData = []
+
+ // flatten the nested data so that it is easier to work with
+  data.forEach(function(d) {
+
+    d.tone.to = d.to;
+    d.tone.from = d.from;
+    d.tone.owner = d.owner;
+    d.tone.datetime = d.datetime
+
+    flattenedData.push(d.tone)
+  })
+
+  // group the data by datetime
+  var groupedData = _.groupBy(flattenedData, function(d) { return d.datetime }) 
+  
+  // keys that have non-numerical values and should not be aggregated
+  var metaCats = ['to', 'from', 'owner', 'datetime']
+
+  // initialize array that will store aggregated data
+  aggData = []
+
+
+  for (var k in groupedData) {
+    
+    // check to see if there are multiple arrays associated with a specific date
+    if (groupedData[k].length != 1) {
+
+      // initialize object that will store our aggreated values for a specific date
+      aggVals = {};
+
+      // iterate over the arrays associated with a specific date
+      groupedData[k].forEach(function(d) {
+
+        // iterate over the values in the data object
+        for (var c in d) {
+
+          // check to see if c is a value we don't want aggregated
+          if ( (metaCats.indexOf(c) > -1) == false){
+
+            // if the category is already in our data object we want to add to it
+            if (c in aggVals) {
+
+              aggVals[c] += (d[c] / groupedData[k].length)
+
+            } else {
+
+              // avoid having to iterate again by doing the division initially
+              aggVals[c] = d[c] / groupedData[k].length
+            }
+          } else {
+
+            // add the values that we do not want aggregated to our data object
+            aggVals[c] = d[c]
+          }
+        }
+      })
+        // add our aggreated values to our final data object
+        aggData.push(aggVals)
+
+    } else {
+      // add the data from the arrays that did not have multiple arrays associated with a date to our 
+      // final data object
+      aggData.push(groupedData[k][0])
+    }
+  }
+return aggData
+} // groupByAvg
+
+var data = groupByAvg(data);
+
+    data.forEach(function(d) {
+      d.datetime = new Date(d.datetime * 1000);
+    })
+
+var margin = {top: 30, right: 20, bottom: 150, left: 50},
+    width = $(".col-md-6").width() - margin.right - margin.left
+    height = 300  
+
+var x = d3.time.scale()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)    
+    .tickSize(0) // remove tick lines
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .ticks(10, "%")
+    .orient("left");
+
+var area = d3.svg.area()
+    .x(function(d) { return x(d.datetime); })
+    .y0(height)
+    .y1(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+
+
+
+var line = d3.svg.line()
+    .interpolate("linear") 
+    .x(function(d) { return x(d.datetime); })
+    .y(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+var svg = d3.select("#tone-graph").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+  x.domain(d3.extent(data, function(d) { return d.datetime; }));
+  y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
+
+svg.append("path")
+        .datum(data)
+        .attr("class", "area")
+        .attr("d", area);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(-10," + (height + 30) + ")")
+      .call(xAxis)
+        .selectAll('text')
+        .attr("transform", "rotate(-65)" )
+
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+
+
+  svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", line);
+
+      function updateData(cat) {
+
+
+
+
+          x.domain(d3.extent(data, function(d) { return d.datetime; }));
+          y.domain(d3.extent(data, function(d) { return d[cat]; }));
+
+          svg.select('.x.axis')
+            .call(xAxis)
+
+          svg.select('.y.axis')
+            .call(yAxis)
+
+      var line = d3.svg.line()
+        .interpolate("linear") 
+        .x(function(d) { return x(d.datetime); })
+        .y(function(d) { return y(d[cat]); });
+
+    var path = svg.select('.line').datum(data)
+
+        path.append("path")
+          .attr("class", "line");
+      
+        path.transition()
+          .duration('400')
+          .ease("quad")
+          .attr("d", line);
+
+var area = d3.svg.area()
+    .x(function(d) { return x(d.datetime); })
+    .y0(height)
+    .y1(function(d) { return y(d[cat]); });
+
+var area2 = svg.select('.area').datum(data)
+    
+    area2.append("path")
+            .attr("class", "area")
+            
+      area2.transition()
+        .duration('400')
+        .ease('quad')
+        .attr("d", area);    
+
+    }
+
+      $("#totalToneList").change(function(){
+        cat = $(this)[0].selectedOptions[0].id
+        updateData(cat)
+      })
+
+}
 </script>
 <div class="row" ng-controller="ToneController as dashboard">
   <div class="col-sm-12">
@@ -356,15 +583,15 @@
                 <label class="control-label" style="padding-top: 5px;">Tone Over Time</label>
                 <div class="col-md-6  pull-right">
                   <select id="totalToneList" class="form-control">
-                    <option value="Conscientiousness" selected="selected">Conscientiousness</option>
-                    <option value="Agreeableness">Agreeableness</option>
-                    <option value="Analytical">Analytical</option>
-                    <option value="Anger">Anger</option>
-                    <option value="Confident">Confident</option>
-                    <option value="Cheerfulness">Cheerfulness</option>
-                    <option value="Negative">Negative</option>
-                    <option value="Openness">Openness</option>
-                    <option value="Tentative">Tentative</option>
+                    <option id='Social Tone.Conscientiousness' value="Conscientiousness" selected="selected">Conscientiousness</option>
+                    <option id='Social Tone.Agreeableness' value="Agreeableness">Agreeableness</option>
+                    <option id='Writing Tone.Analytical' value="Analytical">Analytical</option>
+                    <option id='Emotion Tone.Anger'  value="Anger">Anger</option>
+                    <option id='Writing Tone.Confident' value="Confident">Confident</option>
+                    <option id='Emotion Tone.Cheerfulness' value="Cheerfulness">Cheerfulness</option>
+                    <option id='Emotion Tone.Negative' value="Negative">Negative</option>
+                    <option id='Social Tone.Openness'value="Openness">Openness</option>
+                    <option id='Writing Tone.Tentative' value="Tentative">Tentative</option>
                   </select>
                 </div>
               </div>
@@ -378,6 +605,7 @@
     </div>
   </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 <script src="{{ url_for('static', filename='js/dc.js')}}"></script>

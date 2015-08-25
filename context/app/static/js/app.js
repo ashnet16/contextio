@@ -212,7 +212,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
         dashboard.rollupTone();
-        buildTonesD3Chart(dashboard.selectedTone);
+        // buildTonesD3Chart(dashboard.selectedTone);
+        toneChart(dashboard.selectedTone)
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -224,7 +225,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       // this callback will be called asynchronously
       dashboard.selectedTone = response.data;
       dashboard.rollupTone();
-      buildTonesD3Chart(dashboard.selectedTone);
+      toneChart(dashboard.selectedTone)
+      // buildTonesD3Chart(dashboard.selectedTone);
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
