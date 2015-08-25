@@ -178,7 +178,6 @@ def login(provider_name):
                 session["context_id"] = user['context_id']
                 return redirect(url_for('inbox'))
             else:
-                #If a user is signing up using username and password, they shouldn't be directed to inbox. They should be directed to add a contact.
                 session["context_id"] = createContextAccount(**{
                     'email': result.user.email,
                     'first_name': result.user.first_name,
@@ -329,7 +328,7 @@ def sendUserInfo():
             '_id': email,
             'firstname': firstName,
             'sources': [email],
-            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16)
+            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
             'contacts': [],
             'pending_sync': True,
             'pending_contacts': False,
