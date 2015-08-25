@@ -139,7 +139,7 @@ def login(provider_name):
         else:
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
-                print credentials.valid
+                print 'lkj', credentials.valid
                 if credentials.valid == True:
                     return redirect(url_for('inbox'))
     # Create an OAuth2 request for the provider

@@ -146,6 +146,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
+        personalityChart(dashboard.contactPersonality, "contact-chart")
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -156,6 +157,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     then(function(response) {
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
+      personalityChart(dashboard.userPersonality, "user-chart")
+
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
