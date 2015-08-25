@@ -28,6 +28,10 @@
   text-align: center;
   font-size: 18px;
 }
+
+.list-group-item {
+
+}
 </style>
 <script>
 function personalityChart(data, divClass) {
@@ -212,7 +216,7 @@ var svg = d3.select("." + divClass).append("svg")
 
     </div>
 </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 <script src="{{ url_for('static', filename='js/dc.js')}}"></script>

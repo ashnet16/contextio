@@ -16,6 +16,7 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+import itertools
 
 toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
@@ -558,8 +559,10 @@ def getTone():
     if('to' in request.json):
         to = request.json['to']
         userTone = dataStore.getContactToneBySenderAndReceiver(session['email'], to)
+        print userTone
     else:
         userTone = dataStore.getContactToneBySender(session['email'])
+        print userTone
     return json.dumps(userTone)
 
 @app.route('/get-user-tone', methods=["GET", "POST"])
