@@ -122,7 +122,7 @@ class Parser:
             logger.info('msg %s', m.body)
             for mInfo in m.body:
                 content = self.extractMessage(mInfo['content'])
-                message['content'] = content
+                # message['content'] = content
                 #logger.info('content %s', content)
                 toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
                 logger.info('tone %s', toneJson)
