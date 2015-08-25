@@ -41,8 +41,21 @@
             <li><a href="/personality-dashboard">Personality Dashboard</a></li>
             <li><a href="/tone-dashboard">Tone Dashboard</a></li>
           </ul>
-          <ul class="nav navbar-nav navbar-right">
-            <li><a>Hi {{ session['firstname'] }}</a></li>
+          <ul>
+            <li>
+             <a>Hi {{ session['firstname'] }}</a>
+             <ul>
+              <li>
+              <a href="#">Account Settings</a>
+              <ul>
+                <li><a href="#">Delete Account</a></li>
+              </ul>
+              </li>
+             </ul>
+            </li>
+           </ul>
+            
+            
             <li><a href="/logout">Logout</a></li>
           </ul>
         </div><!--/.nav-collapse -->
