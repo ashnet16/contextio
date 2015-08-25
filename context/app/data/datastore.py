@@ -2,6 +2,8 @@ from pymongo import MongoClient
 from helpers.parser import Parser
 import json
 
+logger = log()
+
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
@@ -208,4 +210,24 @@ class DataStore:
         else:
             logger.info("Did not insert contact %s ", contactInfo['email'])
 
+    def delete_account(self, context_id): #Testing
+        """ This function grabs the list of collections in the nous database and removes any document related to the context_id. In addition, it deletes the user account from contextio"""
+        try:
+            collections = DBS_NAME.collection_names()#list of collections could potentially use DBS_NAME.collections
+            for collect in collections:
+                DBS_NAME.collect.remove({'context_id':context_id})
+                return true
+            logger.info('{0} data removed from all collections'.format(context_id))
+        except Exception as e:
+            logger.error('Encountered the following error when try to delete account {0}: {1}'.format(context_id, e))
+            return false
+
+
+
+
+
+
+
     #def getMessages(self, email):
+
+
