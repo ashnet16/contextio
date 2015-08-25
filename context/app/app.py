@@ -109,14 +109,14 @@ def runAnalysis(userEmail):
         else:
             contactInfo['relationshipScore'] = 0
             userInfo['relationshipScore'] = 0
-            
+
         dataStore.saveRelationshipInfo(userEmail, userFirstName, userEmail, contactInfo)
         # Get the reversed relationship analysis. Do not have firstname on contact so using name
         dataStore.saveRelationshipInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
 
     dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
     print '*********Completed initial analysis********'
-    return 
+    return
 
 @app.route('/')
 def index():
@@ -247,7 +247,7 @@ def inbox():
     elif(user['pending_contacts']):
         return render_template('inbox.html', user=user)
     elif(user['pending_analysis']):
-        logger.info("pending analysis contact %s", session['contacts'] )
+        logger.info("pending analysis contact" )
         return render_template('inbox.html', user=user)
     else:
         # get analysis data from mongodb and display the inbox
@@ -261,9 +261,9 @@ def doAnalysis2():
     p.start()
     return json.dumps({ 'message': 'Running analysis'})
 
-@app.route('/do-analysis', methods=['POST'])
+@app.route('/do-analysis-sync', methods=['POST'])
 def doAnalysisSync():
-    logger.info("in do analysis ")
+    logger.info("in do analysis sync")
     dataStore.updateUser(session["email"], **{ 'pending_analysis': True, 'pending_contacts': False })
     jsonResult = runAnalysis(session['email'])
     return json.dumps(jsonResult)
@@ -381,14 +381,14 @@ def showMoreContacts():
     user['refresh_from_db'] = True
     dataStore.updateUser(user['_id'], **{ 'refresh_from_db': True})
     return render_template('moreContacts.html')
-     
+
 
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
     contactEmail = request.json["email"]
     contactId = session['email'] + '_' + contactEmail
     return json.dumps(dataStore.updateContactStatus(contactId, True))
-     
+
 @app.route('/removeContact', methods=["POST"])
 def removeContact():
     user = dataStore.getUser(session['email'])
@@ -398,7 +398,7 @@ def removeContact():
     contactId = session['email'] + '_' + contact['emails'][0]
     dataStore.updateContactStatus(contactId, False)
     return json.dumps(True)
-    
+
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
 	IMAPSettings = {"source_type":source,"email":email}
@@ -508,7 +508,7 @@ def getUserContacts():
     contacts = userAccount.get_contacts()
     for contact in contacts:
         contact.get()
-        contactDB = {'name': contact.name, 
+        contactDB = {'name': contact.name,
                     'emails': contact.emails,
                     'email': contact.emails[0],
                     'user': session['email'],
@@ -538,7 +538,7 @@ def getUserContactsDB():
         if contact['is_selected'] == True:
             selectedContacts.append(contact)
         allContacts.append(contact)
-        
+
     result = {
         'contacts': allContacts,
         'selectedContacts': selectedContacts
@@ -554,7 +554,7 @@ def getSelectedContacts():
         if contact['is_selected'] == True:
             selectedContacts.append(contact)
     return json.dumps(selectedContacts)
-    
+
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
     user = dataStore.getUser(session['email'])

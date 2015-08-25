@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="row" ng-controller='InboxController as app'>
+<div class="row" ng-controller='ContactsController as contactCtrl'>
   <div class="col-md-12">
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
@@ -8,23 +8,23 @@
           <p>To allow us to analyze your mailbox effectively you need to select one or more contacts to include</p>
         </div>
         <table class="table">
-          <tr ng-repeat="contact in app.contacts.contacts">
-            <td class="col-sm-10">[[ app.contactText(contact)]]</td>
-            <td><a class="btn btn-xs btn-default pull-right" ng-click="app.toggleContact(contact)">
-              <span ng-show="app.contactExists(contact, [[$index]])">Remove</span>
-              <span ng-show="!app.contactExists(contact)">Add</span></a>
+          <tr ng-repeat="contact in contactCtrl.contacts.contacts">
+            <td class="col-sm-10">[[ contactCtrl.contactText(contact)]]</td>
+            <td><button class="btn btn-xs btn-default pull-right" ng-click="contactCtrl.toggleContact(contact)" ng-disabled="contactCtrl.status.pending_analysis">
+              <span ng-show="contactCtrl.contactExists(contact, [[$index]])">Remove</span>
+              <span ng-show="!contactCtrl.contactExists(contact)">Add</span></button>
             </td>
           </tr>
         </table>
         <div>
-          <a class="btn btn-primary pull-right" ng-show="app.contacts" ng-click="app.doAnalysis()">Analyse Now</a>
+          <a class="btn btn-primary pull-right" ng-show="contactCtrl.contacts" ng-click="contactCtrl.doAnalysis()" ng-disabled="contactCtrl.status.pending_analysis">Analyse Now</a>
         </div>
       </div>
-      <div class="col-md-6 col-md-offset-3 text-center" ng-show="app.status.pending_analysis">
-        <p ng-show="app.status.pending_analysis">Our cognitive minions are currently analysing your mailbox. Check your inbox for updated messages.</p>
+      <div class="col-md-6 col-md-offset-3 text-center" ng-show="contactCtrl.status.pending_analysis">
+        <p ng-show="contactCtrl.status.pending_analysis">Our cognitive minions are currently analysing your mailbox. Check your inbox for updated messages.</p>
       </div>
 	</div>
    </div>
 </div>
-	 
+
 {% endblock body %}
