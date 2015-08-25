@@ -226,6 +226,7 @@ def inbox():
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
         if(isOkay):
+
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
@@ -306,6 +307,7 @@ def mailboxSyncCallback():
     user = dataStore.getUserByContextId(accountId)
     dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
     return 'OK'
+
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
 def sendUserInfo():
@@ -509,7 +511,7 @@ def getUserContacts():
         contacts = userAccount.get_contacts()
         for contact in contacts:
             contact.get()
-            contactDB = {'name': contact.name, 
+            contactDB = {'name': contact.name,
                         'emails': contact.emails,
                         'email': contact.emails[0],
                         'user': session['email'],
@@ -541,7 +543,7 @@ def getUserContactsDB():
     for contact in contacts:
         if contact['is_selected'] == True:
             selectedContacts.append(contact)
-            contactNames.append(contact.emails[0])
+            contactNames.append(contact['emails'][0])
         allContacts.append(contact)
 
     result = {
@@ -549,7 +551,7 @@ def getUserContactsDB():
         'selectedContacts': selectedContacts
     }
     session['email'] = contactNames
-    return result
+    return json.dumps(result)
 
 
 @app.route('/get-selected-contacts', methods=["GET"])
