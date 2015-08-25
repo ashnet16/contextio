@@ -115,7 +115,7 @@ def runAnalysis(userEmail):
         # Get the reversed relationship analysis. Do not have firstname on contact so using name
         dataStore.saveRelationshipInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
 
-    dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
+    dataStore.updateUser(userEmail, **{ 'pending_contacts': False, 'pending_analysis': False })
     print '*********Completed initial analysis********'
     return
 
@@ -166,7 +166,7 @@ def login(provider_name):
                 'pending_sync': True,
                 'pending_contacts': False,
                 'pending_analysis': False,
-          
+
             })
 
             session['firstname'] = result.user.first_name;
@@ -365,7 +365,7 @@ def addMailbox():
         "email": email,
         "first_name": session["firstname"],
         #"app_id": session['app_id'] #Ashley testing
-         
+
         })
         return json.dumps(result);
 
