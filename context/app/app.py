@@ -162,8 +162,7 @@ def login(provider_name):
                 'contacts': [],
                 'pending_sync': True,
                 'pending_contacts': False,
-                'pending_analysis': False,
-                'refresh_from_db': False
+                'pending_analysis': False
             })
 
             session['firstname'] = result.user.first_name;
@@ -230,7 +229,6 @@ def inbox():
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
-            user['refresh_from_db'] = False
     # End of localhost hack
 
     #try:
@@ -378,11 +376,9 @@ def mailboxes():
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     user = dataStore.getUser(session['email'])
-    user['refresh_from_db'] = True
-    dataStore.updateUser(user['_id'], **{ 'refresh_from_db': True})
+    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True})
     return render_template('moreContacts.html')
      
-
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
     contactEmail = request.json["email"]
@@ -492,7 +488,6 @@ def getInbox():
     messages = []
     latestDate = 0
     for contact in contacts:
-        #latestDate = contact['last_sent'] ? contact['last_received']
         contactEmail = contact['email']
         messages = messages + userAccount.get_messages(limit=20, include_body=0, email=contactEmail, body_type="text/html")
     result = {
@@ -503,29 +498,36 @@ def getInbox():
 
 @app.route('/get-contacts', methods=["GET"])
 def getUserContacts():
+    result = {}
+    contactNames = []
     user = dataStore.getUser(session['email'])
-    userAccount = c.Account(context_io, { 'id': user["context_id"] })
-    contacts = userAccount.get_contacts()
-    for contact in contacts:
-        contact.get()
-        contactDB = {'name': contact.name, 
-                    'emails': contact.emails,
-                    'email': contact.emails[0],
-                    'user': session['email'],
-                    'is_selected': False,
-                    'thumbnail':contact.name,
-                    'last_received':contact.last_received,
-                    'last_sent':contact.last_sent,
-                    'count':contact.count
-                }
-        contactId = session['email'] + '_' + contact.emails[0]
-        print 'contactId %s ', contactId
-        dataStore.addContact(contactId, **contactDB )
+    if dataStore.hasContactsPopulated(session['email']) > 0:
+        result = getUserContactsDB()
+    else:
+        userAccount = c.Account(context_io, { 'id': user["context_id"] })
+        contacts = userAccount.get_contacts()
+        for contact in contacts:
+            contact.get()
+            contactDB = {'name': contact.name, 
+                        'emails': contact.emails,
+                        'email': contact.emails[0],
+                        'user': session['email'],
+                        'is_selected': False,
+                        'thumbnail':contact.name,
+                        'last_received':contact.last_received,
+                        'last_sent':contact.last_sent,
+                        'count':contact.count
+                        }
+            contactNames.append(contact.emails[0])
+            contactId = session['email'] + '_' + contact.emails[0]
+            print 'contactId %s ', contactId
+            dataStore.addContact(contactId, **contactDB )
 
-    result = {
-        'contacts': contacts,
-        'selectedContacts': []
-    }
+        result = {
+            'contacts': contacts,
+            'selectedContacts': []
+        }
+        session['contacts'] = contactNames
     return json.dumps(result, default=lambda o: o.__dict__)
 
 @app.route('/get-contacts-db', methods=["GET"])
@@ -533,17 +535,20 @@ def getUserContactsDB():
     contacts = dataStore.getContactsByUser(session['email'])
     selectedContacts =[]
     allContacts = []
+    contactNames = []
     print 'Calling get-contacts-from-db'
     for contact in contacts:
         if contact['is_selected'] == True:
             selectedContacts.append(contact)
+            contactNames.append(contact.emails[0])
         allContacts.append(contact)
         
     result = {
         'contacts': allContacts,
         'selectedContacts': selectedContacts
     }
-    return json.dumps(result, default=lambda o: o.__dict__)
+    session['email'] = contactNames
+    return result
 
 
 @app.route('/get-selected-contacts', methods=["GET"])
@@ -577,12 +582,10 @@ def checkStatus():
             user['pending_contacts'] = True
             user['pending_sync'] = False
     # End of localhost hack
-    print 'check-status ', user['refresh_from_db']
     return json.dumps({
         'pending_sync': user['pending_sync'],
         'pending_contacts': user['pending_contacts'],
-        'pending_analysis': user['pending_analysis'],
-        'refresh_from_db': user['refresh_from_db']
+        'pending_analysis': user['pending_analysis']
     })
 
 @app.route('/get-tone', methods=["GET", "POST"])

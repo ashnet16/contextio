@@ -166,6 +166,11 @@ class DataStore:
         elif selected is False:
             return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
 
+    def hasContactsPopulated(self, userEmail):
+        contactsCollection = self.db.contactsCollection
+        return contactsCollection.find( {'user': userEmail}).count()
+
+
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
@@ -177,7 +182,8 @@ class DataStore:
         msgsForTone  = messagesCollection.find({'from':contactInfo['email'], 'to': userEmail}).sort('datetime', 1)
         mList = []
         for m in msgsForTone:
-            mList.append(m['avgTone'])
+            if 'avgTone' in m:
+                mList.append(m['avgTone'])
 
         limitedMessages = list(messagesCollection.aggregate([
                      { '$match': {'from':contactInfo['email'], 'to': userEmail} },

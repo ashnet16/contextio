@@ -46,12 +46,9 @@ angular.module('nousApp', []).config(function($interpolateProvider){
           app.getContacts();
         }
         if(app.status.pending_analysis == true
-          && data.pending_analysis == false && data.refresh_from_db == false) {
+          && data.pending_analysis == false ) {
             app.loadInbox();
           }
-        if (data.refresh_from_db == true) {
-          app.getContactsDB();
-        }
         app.status = data;
     });
   };
@@ -144,9 +141,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       app.status = response.data;
       if(app.status.pending_contacts) {
         app.getContacts();
-      } else if (app.status.refresh_from_db){
-        app.getContactsDB();
-      }else if(!app.status.pending_sync && !app.status.pending_analysis && !app.status.refresh_from_db) {
+      }else if(!app.status.pending_sync && !app.status.pending_analysis) {
         app.showInbox = true;
         app.loadInbox();
       }
