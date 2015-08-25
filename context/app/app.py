@@ -16,6 +16,7 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+
 toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
 
@@ -122,7 +123,8 @@ def runAnalysis(userEmail):
 def index():
     if 'provider_name' in session:
         if session['provider_name'] == 'local':
-            return render_template('inbox.html')
+        #return render_template('inbox.html')
+            return redirect(url_for('inbox'))
         else:
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
@@ -155,6 +157,7 @@ def login(provider_name):
         if result.user:
             result.user.update()
             # Create a user. If the user already exists it simply return the user
+            #app_id = nous_id()
             user = dataStore.createUser(**{
                 '_id': result.user.email,
                 'firstname': result.user.first_name,
@@ -162,15 +165,16 @@ def login(provider_name):
                 'contacts': [],
                 'pending_sync': True,
                 'pending_contacts': False,
-                'pending_analysis': False
+                'pending_analysis': False,
+          
             })
 
             session['firstname'] = result.user.first_name;
             session['email'] = result.user.email;
-
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
             session['credentials'] = result.user.credentials.serialize()
+            #session['app_id'] = result.user.app_id;
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
@@ -316,18 +320,23 @@ def sendUserInfo():
     password = request.json["password"]
     # Check if the user exists
     user = dataStore.getUser(email);
+    error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
     if user != None:
         # Compare password
         if pbkdf2_sha256.verify(password, user["password"]) == True:
             session["context_id"] = user["context_id"]
         else:
-            raise Exception('Invalid account details!')
+            return render_template('userLogin.html',error=error) #may not be able to use this
     else:
         user = dataStore.createUser(**{
             '_id': email,
             'firstname': firstName,
             'sources': [email],
-            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16)
+            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
+            'contacts': [],
+            'pending_sync': True,
+            'pending_contacts': False,
+            'pending_analysis': False,
         });
         accountData = {
             'email': email,
@@ -354,7 +363,9 @@ def addMailbox():
         result = account.post_connect_token(**{
         "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
-        "first_name": session["firstname"]
+        "first_name": session["firstname"],
+        #"app_id": session['app_id'] #Ashley testing
+         
         })
         return json.dumps(result);
 

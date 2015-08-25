@@ -1,4 +1,4 @@
-:wq{% extends "base.html" %}
+{% extends "base.html" %}
 {% block body %}
 <script>
 $(document).ready(function() {
@@ -75,7 +75,7 @@ function enable(label,status) {
             <td>{{ source["username"] }}</td>
             <td>{{ source["status"] }}</td>
             <td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td>
-            {%if source["status"] == "disabled"%}
+            {%if source["status"] == "DISABLED"%}
               <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
               {%endif%}
             
