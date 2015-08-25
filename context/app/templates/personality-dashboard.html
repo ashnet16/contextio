@@ -2,7 +2,7 @@
 {% block body %}
 <style>
 .bar {
-  fill: #747D7D;
+  fill: #0C090A;
 }
 
 .bar:hover {
@@ -179,7 +179,7 @@ var svg = d3.select("." + divClass).append("svg")
     <div class="col-md-6">
       <!-- Big 5 for user goes here -->
       <!-- <p>[[dashboard.userPersonality]]</p> -->
-            <ul class="list-group" style="margin-left:4%">
+            <ul class="list-group">
               <button type="button" class="list-group-item user" id="0" onclick="this.blur();">Openness</button>
               <button type="button" class="list-group-item user" id="1" onclick="this.blur();">Conscientiousness</button>
               <button type="button" class="list-group-item user" id="2" onclick="this.blur();">Extraversion</button>
@@ -190,7 +190,7 @@ var svg = d3.select("." + divClass).append("svg")
     <div class="col-md-6">
       <!-- Big 5 for selected contact goes here -->
       <!-- <p>[[dashboard.contactPersonality]]</p> -->
-            <ul class="list-group" style="margin-left:4%">
+            <ul class="list-group" >
               <button type="button" class="list-group-item contact" id="0" onclick="this.blur();">Openness</button>
               <button type="button" class="list-group-item contact" id="1" onclick="this.blur();">Conscientiousness</button>
               <button type="button" class="list-group-item contact" id="2" onclick="this.blur();">Extraversion</button>
