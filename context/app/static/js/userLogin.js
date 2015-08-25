@@ -45,7 +45,7 @@ $(document).ready(function() {
         data: JSON.stringify(userInfo, null, '\t'),
         contentType: 'application/json;charset=UTF-8',
         success: function(response) {
-          window.location = '/inbox'
+          window.location = '/mailboxes'
         },
         error: function(error) {
           console.log(error);

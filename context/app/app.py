@@ -121,7 +121,8 @@ def runAnalysis(userEmail):
 def index():
     if 'provider_name' in session:
         if session['provider_name'] == 'local':
-            return render_template('inbox.html')
+        #return render_template('inbox.html')
+            return redirect(url_for('inbox'))
         else:
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
@@ -322,13 +323,17 @@ def sendUserInfo():
         if pbkdf2_sha256.verify(password, user["password"]) == True:
             session["context_id"] = user["context_id"]
         else:
-            return render_template('userLogin.html',error=error)
+            return render_template('userLogin.html',error=error) #may not be able to use this
     else:
         user = dataStore.createUser(**{
             '_id': email,
             'firstname': firstName,
             'sources': [email],
             'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16)
+            'contacts': [],
+            'pending_sync': True,
+            'pending_contacts': False,
+            'pending_analysis': False,
         });
         accountData = {
             'email': email,
