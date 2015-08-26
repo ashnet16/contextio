@@ -27,18 +27,6 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       });
   }
 
-  app.getContactsDB = function() {
-    $http.get('/get-contacts-db').
-      then(function(response) {
-        // this callback will be called asynchronously
-        console.log(response)
-        app.contacts = response.data;
-      }, function(response) {
-        // called asynchronously if an error occurs
-        // or server returns response with an error status.
-      });
-  }
-
   var checkStatus = function () {
     StatusChecker.poll('/check-status').then(function(data){
         if(data.pending_contacts &&
@@ -103,6 +91,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
           // or server returns response with an error status.
         });
     }
+
   }
 
   app.doAnalysis = function() {
@@ -152,12 +141,24 @@ angular.module('nousApp', []).config(function($interpolateProvider){
 }]).controller('PersonalityController', ['$http', function($http) {
   var dashboard = this;
 
-  dashboard.getContactPersonality = function() {
+  dashboard.getContactPersonality = function(update) {
+
+    // initialize the default value of update to false
+    update = update || false
+
+    
     $http.post('/get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
-        personalityChart(dashboard.contactPersonality, "contact-chart")
+
+      // the update value is assigned in the template
+      if (update == true) {
+          // updates the contact personality chart with the new contact's data
+          buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
+    } else {
+      buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
+    }
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -168,7 +169,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     then(function(response) {
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
-      personalityChart(dashboard.userPersonality, "user-chart")
+      // build the user personality chart
+      buildPersonalityChart(dashboard.userPersonality, "user-chart")
 
     }, function(response) {
       // called asynchronously if an error occurs
@@ -212,7 +214,12 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       dashboard.toneRollup.Cheerfulness += item['Emotion Tone.Cheerfulness'];
     }
   }
-  dashboard.getContactTone = function() {
+  dashboard.getContactTone = function(update) {
+    
+    // initialize the default value of update to false
+    update = update || false
+
+
     var data = {}
     if(dashboard.toneSwitch==='contact') {
       if(!dashboard.selectedContact) return dashboard.selectedTone = null;
@@ -223,8 +230,19 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
         dashboard.rollupTone();
-        // buildTonesD3Chart(dashboard.selectedTone);
-        toneChart(dashboard.selectedTone)
+        
+    // the update value is assigned in the template
+    if (update == true) {
+
+      // removes the existing chart
+      $('#tone-graph').find('svg').fadeOut()
+
+      // creates new chart after a delay to ensure the previous chart has been removed
+        setTimeout(function() {
+          toneChart(dashboard.selectedTone)
+        }, 500)
+    
+    }
 
  personality_dashboard
       }, function(response) {
@@ -257,104 +275,13 @@ angular.module('nousApp', []).config(function($interpolateProvider){
   return function (input, decimals) {
     return $filter('number')(input * 100, decimals) + '%';
   };
-}]).controller('ContactsController', ['$http', 'StatusChecker', function($http, StatusChecker) {
-  var contactCtrl = this;
-  contactCtrl.status = {}
-  var timer = null;
-  var checkStatus = function () {
-    StatusChecker.poll('/check-status').then(function(data){
-        if(contactCtrl.status.pending_analysis == true
-          && data.pending_analysis == false) {
-            window.clearInterval(timer);
-          }
-        contactCtrl.status = data;
-    });
-  };
-
-  contactCtrl.doAnalysis = function() {
-    $http.post('/do-analysis', {}).
-      then(function(response) {
-        // this callback will be called asynchronously
-        console.log(response)
-        contactCtrl.status.pending_analysis = true;
-        timer = setInterval(checkStatus, 10000);
-      }, function(response) {
-        // called asynchronously if an error occurs
-        // or server returns response with an error status.
-      });
-  }
-  contactCtrl.contactText = function(contact) {
-    return contact.name ? contact.name : contact.email;
-  }
-  contactCtrl.contactExists = function(contact) {
-    for(i=0;i<contactCtrl.contacts.selectedContacts.length;i++) {
-      var selected = contactCtrl.contacts.selectedContacts[i];
-      if(selected && selected.emails) {
-        for(x=0;x<selected.emails.length;x++) {
-          if(selected.emails[x] === contact.email) return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  contactCtrl.toggleContact = function(contact, index) {
-    var contactEmailObj = {
-      "email":contact.email
-    };
-    if(contact.contactExists(contact)) {
-      $http.post('/removeContact', { contact: contact }).
-        then(function(response) {
-          // this callback will be called asynchronously
-          if(response.data)
-            contactCtrl.contacts.selectedContacts.splice(index, 1);
-          // TODO display an error to the user
-        }, function(response) {
-          // called asynchronously if an error occurs
-          // or server returns response with an error status.
-        });
-    } else {
-      $http.post('/selectContact', contactEmailObj).
-        then(function(response) {
-          // this callback will be called asynchronously
-          console.log(response)
-          contactCtrl.contacts.selectedContacts.push(response.data);
-          contactCtrl.added = true;
-        }, function(response) {
-          // called asynchronously if an error occurs
-          // or server returns response with an error status.
-        });
-    }
-  }
-
-  $http.get('/get-contacts-db').
-    then(function(response) {
-      // this callback will be called asynchronously
-      console.log(response)
-      contactCtrl.contacts = response.data;
-    }, function(response) {
-      // called asynchronously if an error occurs
-      // or server returns response with an error status.
-    });
-    $http.get('/check-status').
-      then(function(response) {
-        // this callback will be called asynchronously
-        console.log(response)
-        contactCtrl.status = response.data;
-        if(contactCtrl.status.pending_analysis) {
-          timer = setInterval(checkStatus, 10000);
-        }
-      }, function(response) {
-        // called asynchronously if an error occurs
-        // or server returns response with an error status.
-      });
-}]);
+}]);;
 
 var contacts = []
 var timespan = 100;
 $('#contactsModal').on('shown.bs.modal', function () {
   //refreshContactModal();
-});
+})
 
 function refreshContactModal() {
   //$('#modalContacts').empty();

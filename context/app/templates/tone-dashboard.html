@@ -167,9 +167,6 @@ var area = d3.svg.area()
     .y0(height)
     .y1(function(d) { return y(d['Social Tone.Conscientiousness']); });
 
-
-
-
 var line = d3.svg.line()
     .interpolate("linear") 
     .x(function(d) { return x(d.datetime); })
@@ -180,8 +177,6 @@ var svg = d3.select("#tone-graph").append("svg")
     .attr("height", height + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
 
   x.domain(d3.extent(data, function(d) { return d.datetime; }));
   y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
@@ -259,65 +254,6 @@ var area2 = svg.select('.area').datum(data)
 
 }
 
-  // PURE D3 CHART ----------------------------------------------------------
-
-//   function toneChart(data) {
-//     console.log(data)
-//     console.log(_.groupBy(data, function(d) {
-//       sum = d.
-//     }))
-
-// var parseDate = d3.time.format("%d-%b-%y").parse;
-
-// var x = d3.time.scale()
-//     .range([0, width]);
-
-// var y = d3.scale.linear()
-//     .range([height, 0]);
-
-// var xAxis = d3.svg.axis()
-//     .scale(x)
-//     .orient("bottom");
-
-// var yAxis = d3.svg.axis()
-//     .scale(y)
-//     .orient("left");
-
-// var line = d3.svg.line()
-//     .x(function(d) { return x(d.date); })
-//     .y(function(d) { return y(d.close); });
-
-// var svg = d3.select("body").append("svg")
-//     .attr("width", width + margin.left + margin.right)
-//     .attr("height", height + margin.top + margin.bottom)
-//   .append("g")
-//     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-//   x.domain(d3.extent(data, function(d) { return d.datetime; }));
-//   y.domain(d3.extent(data, function(d) { return d.close; }));
-
-//   svg.append("g")
-//       .attr("class", "x axis")
-//       .attr("transform", "translate(0," + height + ")")
-//       .call(xAxis);
-
-//   svg.append("g")
-//       .attr("class", "y axis")
-//       .call(yAxis)
-//     .append("text")
-//       .attr("transform", "rotate(-90)")
-//       .attr("y", 6)
-//       .attr("dy", ".71em")
-//       .style("text-anchor", "end")
-//       .text("Price ($)");
-
-//   svg.append("path")
-//       .datum(data)
-//       .attr("class", "line")
-//       .attr("d", line);
-//   }
-
 
 </script>
 <div class="row" ng-controller="ToneController as dashboard">
@@ -348,7 +284,7 @@ var area2 = svg.select('.area').datum(data)
             <select class="form-control pull-right" id="selectContact"
               ng-model="dashboard.selectedContact"
               ng-options="contact as (contact.name ? contact.name : contact.emails[0]) for contact in dashboard.contacts"
-              ng-change="dashboard.getContactTone()"
+              ng-change="dashboard.getContactTone(true)"
               ng-disabled="dashboard.toneSwitch=='user'">
               <option value="">--- Select a contact ---</option>
             </select>
