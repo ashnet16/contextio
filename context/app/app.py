@@ -615,21 +615,24 @@ def enable():
 
 @app.route('/delete', methods=['POST', 'GET'])
 def removeAccount():
+    #Need to rewrite this. Too long and not using DRY
     removed = ' Your account has been successfully delete. We hope to see you again.'
     error = 'Oops, something went wrong when trying to delete your account. Please contact knowus.io'
     dbremove = dataStore.delete_account(session["context_id"])
     if dbremove == True:
         account = c.Account(context_io, { 'id': session["context_id"]})
         del_acct = account.delete()
-        if del_acct == 'True':
+        if del_acct['success'] == 'true':
            logger.info('{0} account has been deleted from contextio'.format(session["context_id"]))
            session.clear()
            return render_template('userLogin.html',error=removed)
         else:
             logger.info('Encountered an issue when trying to delete account {0} from contextio.'.format(session["context_id"]))
+            session.clear()
+            return render_template('userLogin.html',error=error)
     else:
          session.clear()
-         return render_template('userLogin.html',error=error)  # Link to html this evening alon with styling
+         return render_template('userLogin.html',error=error)  
       
                         
         

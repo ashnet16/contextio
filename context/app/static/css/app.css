@@ -30,3 +30,13 @@ body {
 #add {
     margin-top: 20px;
 }
+
+.flash {
+    background-color: #FBB0B0;
+    padding: 10px;
+    width: 400px;
+    font-style: normal;
+    font-family: "Times New Roman", Times, serif;
+    
+}
+

@@ -214,14 +214,14 @@ class DataStore:
     def delete_account(self, context_id): #Testing
         """ This function grabs the list of collections in the nous database and removes any document related to the context_id. In addition, it deletes the user account from contextio"""
         try:
-            collections = DBS_NAME.collection_names()#list of collections could potentially use DBS_NAME.collections
+            collections = self.db.collection_names()
             for collect in collections:
-                DBS_NAME.collect.remove({'context_id':context_id})
-                return true
+               self.db.collect.remove({'context_id':context_id})
+                return True
             logger.info('{0} data removed from all collections'.format(context_id))
         except Exception as e:
-            logger.error('Encountered the following error when try to delete account {0}: {1}'.format(context_id, e))
-            return false
+            logger.error('Encountered the following error when trying to delete account {0}:{1}'.format(context_id, e))
+            return False
 
 
 
