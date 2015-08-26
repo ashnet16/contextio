@@ -60,167 +60,183 @@
 
 
 
-function toneChart(data) {
+function toneChart(data, update) {
 
-function groupByAvg(data) {
-/* it was quicker for me to roll my own function to group and average the data 
- by date than to learn crossfilter.js although crossfilter is likely much more efficient */
+  function groupByAvg(data) {
+  /* it was quicker for me to roll my own function to group and average the data 
+   by date than to learn crossfilter.js although crossfilter is likely much more efficient */
 
-  
- // initialize the array that will contain the flattened data
-  flattenedData = []
-
- // flatten the nested data so that it is easier to work with
-  data.forEach(function(d) {
-
-    d.tone.to = d.to;
-    d.tone.from = d.from;
-    d.tone.owner = d.owner;
-    d.tone.datetime = d.datetime
-
-    flattenedData.push(d.tone)
-  })
-
-  // group the data by datetime
-  var groupedData = _.groupBy(flattenedData, function(d) { return d.datetime }) 
-  
-  // keys that have non-numerical values and should not be aggregated
-  var metaCats = ['to', 'from', 'owner', 'datetime']
-
-  // initialize array that will store aggregated data
-  aggData = []
-
-  for (var k in groupedData) {
     
-    // check to see if there are multiple arrays associated with a specific date
-    if (groupedData[k].length != 1) {
+   // initialize the array that will contain the flattened data
+    flattenedData = []
 
-      // initialize object that will store our aggreated values for a specific date
-      aggVals = {};
-
-      // iterate over the arrays associated with a specific date
-      groupedData[k].forEach(function(d) {
-
-        // iterate over the values in the data object
-        for (var c in d) {
-
-          // check to see if c is a value we don't want aggregated
-          if ( (metaCats.indexOf(c) > -1) == false){
-
-            // if the category is already in our data object we want to add to it
-            if (c in aggVals) {
-
-              aggVals[c] += (d[c] / groupedData[k].length)
-
-            } else {
-
-              // avoid having to iterate again by doing the division initially
-              aggVals[c] = d[c] / groupedData[k].length
-            }
-          } else {
-
-            // add the values that we do not want aggregated to our data object
-            aggVals[c] = d[c]
-          }
-        }
-      })
-        // add our aggreated values to our final data object
-        aggData.push(aggVals)
-
-    } else {
-      // add the data from the arrays that did not have multiple arrays associated with a date to our 
-      // final data object
-      aggData.push(groupedData[k][0])
-    }
-  }
-return aggData
-} // groupByAvg
-
-var data = groupByAvg(data);
-
+   // flatten the nested data so that it is easier to work with
     data.forEach(function(d) {
-      d.datetime = new Date(d.datetime * 1000);
+
+      d.tone.to = d.to;
+      d.tone.from = d.from;
+      d.tone.owner = d.owner;
+      d.tone.datetime = d.datetime
+
+      flattenedData.push(d.tone)
     })
 
-var margin = {top: 30, right: 20, bottom: 150, left: 50},
-    width = $(".col-md-6").width() - margin.right - margin.left
-    height = 300  
+    // group the data by datetime
+    var groupedData = _.groupBy(flattenedData, function(d) { return d.datetime }) 
+    
+    // keys that have non-numerical values and should not be aggregated
+    var metaCats = ['to', 'from', 'owner', 'datetime']
 
-var x = d3.time.scale()
-    .range([0, width]);
+    // initialize array that will store aggregated data
+    aggData = []
 
-var y = d3.scale.linear()
-    .range([height, 0]);
+    for (var k in groupedData) {
+      
+      // check to see if there are multiple arrays associated with a specific date
+      if (groupedData[k].length != 1) {
 
-var xAxis = d3.svg.axis()
-    .scale(x)    
-    .tickSize(0) // remove tick lines
-    .orient("bottom");
+        // initialize object that will store our aggreated values for a specific date
+        aggVals = {};
 
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .ticks(10, "%")
-    .orient("left");
+        // iterate over the arrays associated with a specific date
+        groupedData[k].forEach(function(d) {
 
-var area = d3.svg.area()
-    .x(function(d) { return x(d.datetime); })
-    .y0(height)
-    .y1(function(d) { return y(d['Social Tone.Conscientiousness']); });
+          // iterate over the values in the data object
+          for (var c in d) {
 
-var line = d3.svg.line()
-    .interpolate("linear") 
-    .x(function(d) { return x(d.datetime); })
-    .y(function(d) { return y(d['Social Tone.Conscientiousness']); });
+            // check to see if c is a value we don't want aggregated
+            if ( (metaCats.indexOf(c) > -1) == false){
 
-var svg = d3.select("#tone-graph").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+              // if the category is already in our data object we want to add to it
+              if (c in aggVals) {
 
-  x.domain(d3.extent(data, function(d) { return d.datetime; }));
-  y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
+                aggVals[c] += (d[c] / groupedData[k].length)
 
-svg.append("path")
-        .datum(data)
-        .attr("class", "area")
-        .attr("d", area);
+              } else {
 
-  svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(-10," + (height + 30) + ")")
-      .call(xAxis)
-        .selectAll('text')
-        .attr("transform", "rotate(-65)" )
+                // avoid having to iterate again by doing the division initially
+                aggVals[c] = d[c] / groupedData[k].length
+              }
+            } else {
+
+              // add the values that we do not want aggregated to our data object
+              aggVals[c] = d[c]
+            }
+          }
+        })
+          // add our aggreated values to our final data object
+          aggData.push(aggVals)
+
+      } else {
+        // add the data from the arrays that did not have multiple arrays associated with a date to 
+        // our final data object
+        aggData.push(groupedData[k][0])
+      }
+    }
+  return aggData
+  } // groupByAvg
+
+  // get grouped data
+  var data = groupByAvg(data);
+
+      // convert datetime from milliseconds
+      data.forEach(function(d) {
+        d.datetime = new Date(d.datetime * 1000);
+      })
+
+  var margin = {top: 30, right: 20, bottom: 150, left: 50},
+      width = $(".col-md-6").width() - margin.right - margin.left
+      height = 300  
+
+  // scale the x data
+  var x = d3.time.scale()
+      .range([0, width]);
+
+  //scale the y data
+  var y = d3.scale.linear()
+      .range([height, 0]);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)    
+      .tickSize(0) // remove tick lines
+      .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .ticks(10, "%")
+      .orient("left");
+
+  if (update == true) {
+    updateContactData(data)
+  } else {
+
+  // initialize area object for filling the area under the line
+  var area = d3.svg.area()
+      .x(function(d) { return x(d.datetime); })
+      .y0(height)
+      .y1(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+  // initialize line object
+  var line = d3.svg.line()
+      .interpolate("linear") 
+      .x(function(d) { return x(d.datetime); })
+      .y(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+  var svg = d3.select("#tone-graph").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+     x.domain(d3.extent(data, function(d) { return d.datetime; }));
+     y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
+
+    svg.append("path")
+            .datum(data)
+            .attr("class", "area")
+            .attr("d", area);
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(-10," + (height + 30) + ")")
+          .call(xAxis)
+            .selectAll('text')
+            .attr("transform", "rotate(-65)" )
 
 
-  svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis)
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
 
 
-  svg.append("path")
-      .datum(data)
-      .attr("class", "line")
-      .attr("d", line);
+      svg.append("path")
+          .datum(data)
+          .attr("class", "line")
+          .attr("d", line);
 
-      function updateData(cat) {
+} // else
 
-          x.domain(d3.extent(data, function(d) { return d.datetime; }));
-          y.domain(d3.extent(data, function(d) { return d[cat]; }));
+  function updateData(cat) {
 
-          svg.select('.x.axis')
-            .call(xAxis)
+      var svg = d3.select("svg")
 
-          svg.select('.y.axis')
-            .call(yAxis)
+        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        y.domain(d3.extent(data, function(d) { return d[cat]; }));
+
+        svg.select('.x.axis')
+          .call(xAxis)
+          .selectAll('text')
+          .attr("transform", "rotate(-65)" )
+
+        svg.select('.y.axis')
+          .call(yAxis)
 
       var line = d3.svg.line()
         .interpolate("linear") 
         .x(function(d) { return x(d.datetime); })
         .y(function(d) { return y(d[cat]); });
 
-    var path = svg.select('.line').datum(data)
+      var path = svg.select('.line').datum(data)
 
         path.append("path")
           .attr("class", "line");
@@ -230,27 +246,88 @@ svg.append("path")
           .ease("quad")
           .attr("d", line);
 
-var area = d3.svg.area()
-    .x(function(d) { return x(d.datetime); })
-    .y0(height)
-    .y1(function(d) { return y(d[cat]); });
+      var area = d3.svg.area()
+          .x(function(d) { return x(d.datetime); })
+          .y0(height)
+          .y1(function(d) { return y(d[cat]); });
 
-var area2 = svg.select('.area').datum(data)
+      var area2 = svg.select('.area').datum(data)
     
-    area2.append("path")
+          area2.append("path")
             .attr("class", "area")
-            
-      area2.transition()
-        .duration('400')
-        .ease('quad')
-        .attr("d", area);    
+                  
+          // enter the new data
+            area2.transition()
+              .duration('400')
+              .ease('quad')
+              .attr("d", area);    
 
-    }
+    } // update data
 
       $("#totalToneList").change(function(){
         cat = $(this)[0].selectedOptions[0].id
         updateData(cat)
       })
+
+  function updateContactData(data) {
+        
+      // get selected category
+      var cat = $("#totalToneList")[0].selectedOptions[0].id
+
+      // select svg       
+      var svg = d3.select("svg")
+
+        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        y.domain(d3.extent(data, function(d) { return d[cat]; }));
+
+        // create x axis
+        svg.select('.x.axis')
+          .call(xAxis)
+            .selectAll('text')
+            .attr("transform", "rotate(-65)" )
+
+        // create y axis
+        svg.select('.y.axis')
+          .call(yAxis)
+
+      // initialize line object
+      var line = d3.svg.line()
+        .interpolate("linear") 
+        .x(function(d) { return x(d.datetime); })
+        .y(function(d) { return y(d[cat]); });
+
+      // initialize path of line
+      var path = svg.select('.line').datum(data)
+
+          path.append("path")
+            .attr("class", "line");
+        
+          path.transition()
+            .duration('400')
+            .ease("linear")
+            .attr("d", line);
+
+      // initialize area object
+      var area = d3.svg.area()
+          .x(function(d) { return x(d.datetime); })
+          .y0(height)
+          .y1(function(d) { return y(d[cat]); });
+
+      // select section of svg where the area data should be bound to
+      var area2 = svg.select('.area').datum(data)
+          
+          area2
+            .append("path")
+            .attr("class", "area")
+                  
+          // enter the new data
+          area2.transition()
+            .duration('400')
+            .ease('linear')
+            .attr("d", area); 
+
+
+  } // updateContactData
 
 }
 

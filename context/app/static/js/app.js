@@ -234,17 +234,10 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     // the update value is assigned in the template
     if (update == true) {
 
-      // removes the existing chart
-      $('#tone-graph').find('svg').fadeOut()
-
-      // creates new chart after a delay to ensure the previous chart has been removed
-        setTimeout(function() {
-          toneChart(dashboard.selectedTone)
-        }, 500)
+          toneChart(dashboard.selectedTone, update)
     
     }
 
- personality_dashboard
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -258,7 +251,6 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       dashboard.rollupTone();
       toneChart(dashboard.selectedTone)
 
-   personality_dashboard
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
