@@ -619,9 +619,9 @@ def removeAccount():
     error = 'Oops, something went wrong when trying to delete your account. Please contact knowus.io'
     dbremove = dataStore.delete_account(session["context_id"])
     if dbremove == True:
-        account = c.Account(context_io, { 'id': session["context_id"]}
+        account = c.Account(context_io, { 'id': session["context_id"]})
         del_acct = account.delete()
-        if del_acct == 'True'
+        if del_acct == 'True':
            logger.info('{0} account has been deleted from contextio'.format(session["context_id"]))
            session.clear()
            return render_template('userLogin.html',error=removed)

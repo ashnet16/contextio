@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from helpers.parser import Parser
 import json
+from nouslog import log
 
 logger = log()
 
