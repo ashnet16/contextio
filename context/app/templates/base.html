@@ -45,17 +45,15 @@
             <li>
              <a>Hi {{ session['firstname'] }}</a>
              <ul>
-              <li>
+              <li class="child">
               <a href="#">Account Settings</a>
               <ul>
-                <li><a href="#">Delete Account</a></li>
+                <li class="child"><a href="/delete">Delete Account</a></li>
               </ul>
               </li>
              </ul>
             </li>
            </ul>
-            
-            
             <li><a href="/logout">Logout</a></li>
           </ul>
         </div><!--/.nav-collapse -->

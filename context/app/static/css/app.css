@@ -31,3 +31,11 @@ body {
     margin-top: 20px;
 }
 
+.child {
+   border: 1px solid #b7b7b7;
+
+}
+
+.child:hover {
+    visibility: visible;
+}
