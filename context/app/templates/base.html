@@ -1,71 +1,61 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>NousEQ</title>
-    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel= "stylesheet" href= "{{ url_for('static',filename='css/app.css') }}">
-    <script>
-    var userEmail = {
-      "email": "{{ session['email'] }}"
-    }
-    </script>
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{ url_for('static',filename='js/ie10-viewport-bug-workaround.js')}}"></script>
-    <script src="{{ url_for('static',filename='js/angular.min.js')}}"></script>
-    <script src="{{ url_for('static',filename='js/app.js')}}"></script>
-  </head>
-  <body ng-app="nousApp">
-
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-full">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">knowus.io</a>
-        </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li class="active"><a href="/">Home</a></li>
-            <li><a href="/mailboxes">Mailboxes</a></li>
-            <li><a href="/showMoreContacts">Contacts</a></li>
-            <li><a href="/personality-dashboard">Personality Dashboard</a></li>
-            <li><a href="/tone-dashboard">Tone Dashboard</a></li>
-          </ul>
-          <ul>
-            <li>
-             <a>Hi {{ session['firstname'] }}</a>
-             <ul>
-              <li class="child">
-              <a href="#">Account Settings</a>
-              <ul>
-                <li class="child"><a href="/delete">Delete Account</a></li>
-              </ul>
-              </li>
-             </ul>
-            </li>
-           </ul>
-            <li><a href="/logout">Logout</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
-
-    <div class="container-full">
-
-      <div class="starter-template">
-        {% block body %}{% endblock %}
-      </div>
-
-    </div><!-- /.container -->
-  </body>
+    <head>
+        <title>NousEQ</title>
+        <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+            <link rel= "stylesheet" href= "{{ url_for('static',filename='css/app.css') }}">
+                <script>
+                    var userEmail = {
+                        "email": "{{ session['email'] }}"
+                    }
+                </script>
+                <!-- Bootstrap core JavaScript
+                 ================================================== -->
+                <!-- Placed at the end of the document so the pages load faster -->
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+                <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+                <script src="{{ url_for('static',filename='js/ie10-viewport-bug-workaround.js')}}"></script>
+                <script src="{{ url_for('static',filename='js/angular.min.js')}}"></script>
+                <script src="{{ url_for('static',filename='js/app.js')}}"></script>
+                </head>
+    <body ng-app="nousApp">
+        
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container-full">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">knowus.io</a>
+                </div>
+                <div id="navbar" class="collapse navbar-collapse">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="/">Home</a></li>
+                        <li><a href="/mailboxes">Mailboxes</a></li>
+                        <li><a href="/showMoreContacts">Contacts</a></li>
+                        <li><a href="/personality-dashboard">Personality Dashboard</a></li>
+                        <li><a href="/tone-dashboard">Tone Dashboard</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a>Hi {{ session['firstname'] }}</a></li>
+                        <li><a href="/logout">Logout</a></li>
+                        <li><a href="/delete">Delete Account</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+        </nav>
+        
+        <div class="container-full">
+            
+            <div class="starter-template">
+                {% block body %}{% endblock %}
+            </div>
+            
+        </div><!-- /.container -->
+    </body>
 </html>
