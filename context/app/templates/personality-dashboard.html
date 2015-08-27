@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block body %}
+{%if mailboxcount == 0 %}
+    <p class="warning">Hey, looks like you don't have any mailboxes associated with this account. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+{%else%}
+
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
     <h2>Personality Dashboard</h2>
@@ -42,4 +46,5 @@
 
     </div>
 </div>
+{%endif%}
 {% endblock body %}

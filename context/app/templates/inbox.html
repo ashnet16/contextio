@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
+{%if mailboxcount == 0 %}
+<p class="warning"> Hey, you will need to add mailboxes before you can view contacts. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+{%else%}
 <div class="row" ng-controller='InboxController as app'>
   <div class="col-md-12">
     <div class="row">
@@ -35,4 +38,5 @@
           <td>[[ message.subject ]]</td></tr>
         </table>
       </div>
+    {%endif%}
 {% endblock body %}

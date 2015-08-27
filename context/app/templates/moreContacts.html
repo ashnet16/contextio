@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block body %}
+{%if mailboxcount == 0 %}
+    <p class="warning"> Hey, you will need to add mailboxes before you can view contacts. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+{%else%}
+
 <h2> List of contacts </h2>
 {% for contact in listOfContacts %}
 <div><p>{{ contact }}</p></div>
@@ -10,7 +14,7 @@
 <script>
 
 
-
 </script>
 
+{%endif%}
 {% endblock body %}

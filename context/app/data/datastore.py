@@ -211,17 +211,22 @@ class DataStore:
         else:
             logger.info("Did not insert contact %s ", contactInfo['email'])
 
-    def delete_account(self, context_id): #Testing
+    def delete_account(self, context_id):
         """ This function grabs the list of collections in the nous database and removes any document related to the context_id. In addition, it deletes the user account from contextio"""
         try:
-            collections = self.db.collection_names()
+            collections = [collection for collection in  self.db.collection_names() if not collection.startswith('system.')]
             for collect in collections:
-               self.db.collect.remove({'context_id':context_id})
-                return True
+               self.db[collect].remove({'context_id':context_id})
+               return True
             logger.info('{0} data removed from all collections'.format(context_id))
         except Exception as e:
             logger.error('Encountered the following error when trying to delete account {0}:{1}'.format(context_id, e))
             return False
+
+    def getmailboxcount(self, context_id):
+        document = self.db.users.find({"context_id":context_id})
+        mailbox_count = [x for x in document]
+        return mailbox_count[0]['mailboxes']
 
 
 
