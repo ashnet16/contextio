@@ -31,10 +31,10 @@ app.secret_key = 'nous session key'
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
-
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+
 
 logger = log()
 
@@ -167,6 +167,7 @@ def login(provider_name):
                 'pending_sync': True,
                 'pending_contacts': False,
                 'pending_analysis': False,
+                'mailboxes': 1
 
             })
 
@@ -175,7 +176,7 @@ def login(provider_name):
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
             session['credentials'] = result.user.credentials.serialize()
-            #session['app_id'] = result.user.app_id;
+
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
@@ -200,6 +201,7 @@ def logout():
 
 @app.route('/inbox', methods=['GET'])
 def inbox():
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
     logger.info("Just checking" )
     if 'provider_name' in session:
         if session['provider_name'] != 'local':
@@ -254,7 +256,7 @@ def inbox():
         return render_template('inbox.html', user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html',  user=user)
+        return render_template('inbox.html', contactList=user['contacts'], user=user, mailboxcount = mailboxcount)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
@@ -337,6 +339,7 @@ def sendUserInfo():
             'pending_sync': True,
             'pending_contacts': False,
             'pending_analysis': False,
+            'mailboxes': 0      # Test Ashley
         });
         accountData = {
             'email': email,
@@ -363,10 +366,11 @@ def addMailbox():
         result = account.post_connect_token(**{
         "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
-        "first_name": session["firstname"],
-        #"app_id": session['app_id'] #Ashley testing
-
+        "first_name": session["firstname"]
         })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount + 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(result);
 
 @app.route('/remove-mailbox', methods=["POST"])
@@ -375,6 +379,9 @@ def removeMailbox():
         label = request.json["label"]
         account = c.Account(context_io, { 'id': session["context_id"] })
         source = c.Source(account, { 'label': label })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount - 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(source .delete());
 
 @app.route('/mailboxes', methods=["GET"])
@@ -389,7 +396,14 @@ def mailboxes():
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     user = dataStore.getUser(session['email'])
-    return render_template('moreContacts.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    account = c.Account(context_io, { 'id': session["context_id"] })
+    numOfContacts = 30
+    contacts = account.get_contacts(limit=numOfContacts)
+    contactList = []
+    for contactObj in contacts:
+        contactList.append(contactObj.email)
+    return render_template('moreContacts.html', listOfContacts = contactList, mailboxcount = mailboxcount)
 
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
@@ -634,13 +648,15 @@ def showMsgTone():
 def showTone():
     return render_template('tone.html')
 
-@app.route('/personality-dashboard', methods=["GET"])
+@app.route('/personality-dashboard', methods=["GET"]) #Ashley Test
 def showPersonalityDashboard():
-    return render_template('personality-dashboard.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    return render_template('personality-dashboard.html', mailboxcount = mailboxcount)
 
 @app.route('/tone-dashboard', methods=["GET"])
 def showToneDashboard():
-    return render_template('tone-dashboard.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    return render_template('tone-dashboard.html', mailboxcount = mailboxcount)
 
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
@@ -655,7 +671,7 @@ def showToneDashboard():
 
     # Get messages from the mongodb where the from = email
 
-@app.route('/enable', methods=["POST"]) #Test
+@app.route('/enable', methods=["POST"])
 def enable():
     if request.method == 'POST':
         label = request.json["label"]
@@ -664,7 +680,26 @@ def enable():
         logger.info(source)
         return json.dumps(source)
 
-
+@app.route('/delete', methods=['POST', 'GET'])
+def removeAccount():
+    #Need to rewrite this. Too long and not using DRY
+    removed = ' Your account has been successfully deleted. We hope to see you again.'
+    error = 'Oops, something went wrong when trying to delete your account. Please contact knowus.io'
+    try:
+        dbremove = dataStore.delete_account(session["context_id"])
+        account = c.Account(context_io, { 'id': session["context_id"]})
+        del_acct = account.delete()
+        logger.info('{0} account has been deleted from contextio'.format(session["context_id"]))
+        session.clear()
+        return render_template('userLogin.html',error=removed)
+    except:
+        logger.error('App encountered an issue with account: {0} when trying to delete it.'.format(session["context_id"]))
+        session.clear()
+        return render_template('userLogin.html',error=error)  
+      
+                        
+        
+                
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)

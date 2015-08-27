@@ -18,15 +18,16 @@
 	</head>
 	
 	<body>
-        {% if error %}
-        <p class="flash"><strong>Error:</strong> {{ error }}
-        {% endif %}
-		<!-- The Login form -->
+        		<!-- The Login form -->
 		<div class="cont">
 		  <div class="demo">
 		    <div class="login">
 		      <div class="login__check"></div>
 		      <div class="login__form">
+                  {% if error  %}
+                  <p class="flash">{{ error }}</p>
+                  {% endif %}
+
 						<button id="googleLogin" type="button" class="login__button">Login with Google</button>
 		        <div class="login__row">
 		          <svg class="login__icon name svg-icon" viewBox="0 0 20 20">

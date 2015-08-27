@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
+{%if mailboxcount == 0 %}
+    <p class="warning">Hey, looks like you don't have any mailboxes associated with this account. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+{%else%}
 <style>
 .bar {
   fill: #0C090A;
@@ -235,6 +238,12 @@ function buildPersonalityChart(dataset, divClass,update) {
  } // end personalityChart
 
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+<script src="{{ url_for('static', filename='js/dc.js')}}"></script>
+<script src="{{ url_for('static', filename='js/queue.js')}}"></script>
+<script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
     <h2>Personality Dashboard</h2>
@@ -292,10 +301,5 @@ function buildPersonalityChart(dataset, divClass,update) {
 
     </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
-<script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-<script src="{{ url_for('static', filename='js/dc.js')}}"></script>
-<script src="{{ url_for('static', filename='js/queue.js')}}"></script>
-<script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
+{%endif%}
 {% endblock body %}
