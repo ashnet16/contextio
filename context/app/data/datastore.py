@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from pymongo.collection import ReturnDocument 
+from pymongo.collection import ReturnDocument
 from helpers.parser import Parser
 import json
 
@@ -69,7 +69,7 @@ class DataStore:
 
     def saveMessage(self, **message):
         messagesCollection = self.db.messages
-        result = messagesCollection.insert_one(message).inserted_id
+        result = messagesCollection.update({'_id': message['_id']}, message, True)
         return message
 
     def savePersonality(self, **personality):

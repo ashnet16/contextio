@@ -301,9 +301,28 @@ def createContextAccount(**args):
         provider_refresh_token=args['refresh_token'],
         provider_consumer_key=CONFIG['google']['consumer_key'],
         discoveryObject=discoveryObject)
-    #account.post_sync()
+    account.post_webhook(**{
+        "callback_url": url_for('newMailCallback', _external=True),
+        'failure_notif_url': url_for('newMailFailureCallback', _external=True)
+    })
     dataStore.updateUser(args['email'], **{'context_id': account.id})
     return account.id
+
+@app.route('/newmail-callback', methods=['POST'])
+def newMailCallback():
+    print request.json['message_data']['message_id']
+    user = dataStore.getUserByContextId(request.json['account_id'])
+    account = c.Account(context_io, {'id': request.json['account_id']})
+    msg = c.Message(account, { 'message_id': request.json['message_data']['message_id']})
+    msg.get(**{'include_body': 1, 'body_type': 'text/html'})
+    message = parser.processMessage(user['_id'], msg)
+    dataStore.saveMessage(**message)
+    return 'OK'
+
+@app.route('/newmail-failure-callback', methods=['POST'])
+def newMailFailureCallback():
+    print request.json
+    return 'OK'
 
 @app.route('/mailbox-sync-callback', methods=['POST'])
 def mailboxSyncCallback():
