@@ -363,9 +363,10 @@ def addMailbox():
         "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
         "first_name": session["firstname"],
-        #"app_id": session['app_id'] #Ashley testing
-         
         })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount + 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(result);
 
 @app.route('/remove-mailbox', methods=["POST"])
@@ -374,6 +375,9 @@ def removeMailbox():
         label = request.json["label"]
         account = c.Account(context_io, { 'id': session["context_id"] })
         source = c.Source(account, { 'label': label })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount - 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(source .delete());
 
 @app.route('/mailboxes', methods=["GET"])

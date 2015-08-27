@@ -224,9 +224,18 @@ class DataStore:
             return False
 
     def getmailboxcount(self, context_id):
+        """ This function locates all documents within all collections in the nous database and deletes the documents as one part of the account deletion process."""
         document = self.db.users.find({"context_id":context_id})
         mailbox_count = [x for x in document]
         return mailbox_count[0]['mailboxes']
+
+    def updatemailbox(self, context_id, mailboxes):
+        try:
+            self.db.users.update({"context_id" : context_id},{ '$set': { "mailboxes" : mailboxes}})
+            logger.info('Mailbox was added or deleted')
+        except Exception as e:
+            logger.error('The following issue was encountered when trying to update mailboxes:{0}'.format(context_id))
+
 
 
 
