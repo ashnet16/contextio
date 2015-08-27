@@ -141,11 +141,24 @@ angular.module('nousApp', []).config(function($interpolateProvider){
 }]).controller('PersonalityController', ['$http', function($http) {
   var dashboard = this;
 
-  dashboard.getContactPersonality = function() {
+  dashboard.getContactPersonality = function(update) {
+
+    // initialize the default value of update to false
+    update = update || false
+
+    
     $http.post('/get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
+
+      // the update value is assigned in the template
+      if (update == true) {
+          // updates the contact personality chart with the new contact's data
+          buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
+    } else {
+      buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
+    }
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -156,6 +169,9 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     then(function(response) {
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
+      // build the user personality chart
+      buildPersonalityChart(dashboard.userPersonality, "user-chart")
+
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
@@ -198,7 +214,12 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       dashboard.toneRollup.Cheerfulness += item['Emotion Tone.Cheerfulness'];
     }
   }
-  dashboard.getContactTone = function() {
+  dashboard.getContactTone = function(update) {
+    
+    // initialize the default value of update to false
+    update = update || false
+
+
     var data = {}
     if(dashboard.toneSwitch==='contact') {
       if(!dashboard.selectedContact) return dashboard.selectedTone = null;
@@ -209,7 +230,14 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
         dashboard.rollupTone();
-        buildTonesD3Chart(dashboard.selectedTone);
+        
+    // the update value is assigned in the template
+    if (update == true) {
+
+          toneChart(dashboard.selectedTone, update)
+    
+    }
+
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -221,7 +249,8 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       // this callback will be called asynchronously
       dashboard.selectedTone = response.data;
       dashboard.rollupTone();
-      buildTonesD3Chart(dashboard.selectedTone);
+      toneChart(dashboard.selectedTone)
+
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.

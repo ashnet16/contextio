@@ -16,6 +16,7 @@ from helpers.parser import Parser
 from watson.personality import PersonalityInsightsService
 from watson.tone import ToneAnalyzerService
 
+# import itertools
 
 toneAnalyzer = ToneAnalyzerService(os.getenv("VCAP_SERVICES"))
 personalityAnalyzer = PersonalityInsightsService(os.getenv("VCAP_SERVICES"))
@@ -58,26 +59,28 @@ def runAnalysis(userEmail):
     #cList = []
     # Put it to 10 contacts to be displayed as the limit for now
     numOfContacts = 1
-    contacts = user['contacts']
+    # contacts is the list of selected contacts in DB
+    contacts = dataStore.getContactsByUser(userEmail, True)
     userFirstName = user['firstname']
 
     for contact in contacts:
         logger.info("contact in run analysis %s", contact)
-
+        contactEmail = contact['email']
         try:
             # we need to get user<->contact messages first
-            logger.info("getting email from %s ", contact['emails'][0])
-            userMsgs = account.get_messages(sender = userEmail, to=contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contact['emails'][0], limit=20, include_body=1, body_type="text/plain")
+            logger.info("getting email from %s ", contactEmail)
+
+            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=20, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contactEmail, limit=20, include_body=1, body_type="text/plain")
         except:
             errMsg = "Error Retrieving Contacts"
             session.clear()
             return render_template ('error.html', errorMsg = errMsg)
 
-        print 'there are ' + str(len(userMsgs)) + ' messages from ' + userEmail + ' to ' + contact['emails'][0] + ' this contact'
-        print 'there are ' + str(len(contactMsgs)) + ' messages to ' + userEmail + ' from ' + contact['emails'][0] + ' this contact'
+        print 'there are ' + str(len(userMsgs)) + ' messages from ' + userEmail + ' to ' + contactEmail + ' this contact'
+        print 'there are ' + str(len(contactMsgs)) + ' messages to ' + userEmail + ' from ' + contactEmail + ' this contact'
         if len(contactMsgs) > 0:
-            contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contact['emails'][0], 'to': userEmail, 'owner': userEmail})
+            contactInfo = parser.analyzeMessages(contactMsgs, **{'from_': contactEmail, 'to': userEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': contactInfo['email'], 'personality': contactInfo['personality']})
             dataStore.saveMessages(contactInfo['emailMessages'])
         else:
@@ -90,7 +93,7 @@ def runAnalysis(userEmail):
             }
 
         if len(userMsgs) > 0:
-            userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contact['emails'][0], 'owner': userEmail})
+            userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contactEmail, 'owner': userEmail})
             dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
             dataStore.saveMessages(userInfo['emailMessages'])
         else:
@@ -108,14 +111,14 @@ def runAnalysis(userEmail):
         else:
             contactInfo['relationshipScore'] = 0
             userInfo['relationshipScore'] = 0
-            
-        dataStore.saveContactInfo(userEmail, userFirstName, userEmail, contactInfo)
-        # Get the reversed relationship analysis. Do not have firstname on contact so using name
-        dataStore.saveContactInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
 
-    dataStore.updateUser(userEmail, **{ 'pending_analysis': False })
+        dataStore.saveRelationshipInfo(userEmail, userFirstName, userEmail, contactInfo)
+        # Get the reversed relationship analysis. Do not have firstname on contact so using name
+        dataStore.saveRelationshipInfo(userEmail, contact['name'], contactInfo['email'], userInfo)
+
+    dataStore.updateUser(userEmail, **{ 'pending_contacts': False, 'pending_analysis': False })
     print '*********Completed initial analysis********'
-    return contactInfo
+    return
 
 @app.route('/')
 def index():
@@ -139,7 +142,7 @@ def login(provider_name):
         else:
             if 'credentials' in session:
                 credentials = authomatic.credentials(session["credentials"])
-                print credentials.valid
+                print 'lkj', credentials.valid
                 if credentials.valid == True:
                     return redirect(url_for('inbox'))
     # Create an OAuth2 request for the provider
@@ -165,7 +168,6 @@ def login(provider_name):
                 'pending_contacts': False,
                 'pending_analysis': False,
                 'mailboxes': 1
-          
             })
 
             session['firstname'] = result.user.first_name;
@@ -236,8 +238,8 @@ def inbox():
     # End of localhost hack
 
     #try:
-    getContacts(account.get_contacts(limit = 1))
-    logger.info("calling get contacts" )
+    # getContacts(account.get_contacts(limit = 1))
+    #logger.info("calling get contacts" )
     #except:
     #    session.clear()
     #    return render_template('error.html', errorMsg="Error Retrieving Contact On Account Creation")
@@ -245,12 +247,12 @@ def inbox():
     logger.info("pending contacts %d", user['pending_contacts'] )
     logger.info("pending analysis %d", user['pending_analysis'] )
     if(user['pending_sync']):
-        return render_template('inbox.html', contactList=[], user=user)
+        return render_template('inbox.html', user=user)
     elif(user['pending_contacts']):
-        return render_template('inbox.html', contactList=session['contacts'], user=user)
+        return render_template('inbox.html', user=user)
     elif(user['pending_analysis']):
-        logger.info("pending analysis contact %s", session['contacts'] )
-        return render_template('inbox.html', contactList=session['contacts'], user=user)
+        logger.info("pending analysis contact" )
+        return render_template('inbox.html', user=user)
     else:
         # get analysis data from mongodb and display the inbox
         return render_template('inbox.html', contactList=user['contacts'], user=user, mailboxcount = mailboxcount)
@@ -263,23 +265,23 @@ def doAnalysis2():
     p.start()
     return json.dumps({ 'message': 'Running analysis'})
 
-@app.route('/do-analysis', methods=['POST'])
+@app.route('/do-analysis-sync', methods=['POST'])
 def doAnalysisSync():
-    logger.info("in do analysis ")
+    logger.info("in do analysis sync")
     dataStore.updateUser(session["email"], **{ 'pending_analysis': True, 'pending_contacts': False })
     jsonResult = runAnalysis(session['email'])
     return json.dumps(jsonResult)
 
-def getContacts(contacts):
-    logger.info('info from contextio %s', contacts)
-    contactList = []
-    for contact in contacts:
-        contactList.append(contact.email)
-        logger.info('in get contacts %s ', contact.email)
+#def getContacts(contacts):
+#    logger.info('info from contextio %s', contacts)
+#    contactList = []
+#    for contact in contacts:
+#        contactList.append(contact.email)
+#        logger.info('in get contacts %s ', contact.email)
     #Lory: add to DB -- may be changed if we have the selected contacts
     #if emailAdd is not None:
     #    dataStore.updateUser(emailAdd, **{'contacts': contactList})
-    session['contacts'] = contactList
+#    session['contacts'] = contactList
 
 def createContextAccount(**args):
     # check if the account exists
@@ -310,6 +312,7 @@ def mailboxSyncCallback():
     user = dataStore.getUserByContextId(accountId)
     dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
     return 'OK'
+
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
 def sendUserInfo():
@@ -389,7 +392,7 @@ def mailboxes():
 
 # for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js
 # and then displays contacts based on count * offset * 10
-@app.route('/showMoreContacts')
+@app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     mailboxcount = dataStore.getmailboxcount(session["context_id"])
     account = c.Account(context_io, { 'id': session["context_id"] })
@@ -402,24 +405,19 @@ def showMoreContacts():
 
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
-    userAccount = c.Account(context_io, { 'id': session["context_id"] })
     contactEmail = request.json["email"]
-    userSelectedContact = c.Contact(userAccount,{'email':contactEmail})
-    userSelectedContact.get()
-    user = dataStore.getUser(session['email'])
-    contact = { 'name': userSelectedContact.name, 'emails': [contactEmail] }
-    dataStore.addUserContact(user['_id'],  **contact)
-    return json.dumps(contact)
+    contactId = session['email'] + '_' + contactEmail
+    return json.dumps(dataStore.updateContactStatus(contactId, True))
 
 @app.route('/removeContact', methods=["POST"])
 def removeContact():
     user = dataStore.getUser(session['email'])
     contact = request.json['contact']
-    if dataStore.removeUserContact(user['_id'], **contact):
-        dataStore.deleteContactData(user['_id'], **contact)
-        return json.dumps(True)
-    else:
-        return json.dumps(False)
+    #if dataStore.removeUserContact(user['_id'], **contact):
+    dataStore.deleteContactData(user['_id'], **contact)
+    contactId = session['email'] + '_' + contact['emails'][0]
+    dataStore.updateContactStatus(contactId, False)
+    return json.dumps(True)
 
 def getServerSettings(contextioObject,email):
 	source = "IMAP" # contextio only supports IMAP email servers
@@ -509,28 +507,83 @@ def getMessagesFromUser():
 def getInbox():
     user = dataStore.getUser(session['email'])
     userAccount = c.Account(context_io, { 'id': user["context_id"] })
-    messages = userAccount.get_messages(limit=20, include_body=0, body_type="text/html")
+    # get messages of selected contact
+    contacts = dataStore.getContactsByUser(session['email'], True)
+    messages = []
+    latestDate = 0
+    for contact in contacts:
+        contactEmail = contact['email']
+        messages = messages + userAccount.get_messages(limit=20, include_body=0, email=contactEmail, body_type="text/html")
     result = {
-        'msgCount': userAccount.nb_messages,
+        'msgCount': len(messages),
         'messages': messages
     }
     return json.dumps(result, default=lambda o: o.__dict__)
 
 @app.route('/get-contacts', methods=["GET"])
 def getUserContacts():
+    result = {}
+    contactNames = []
     user = dataStore.getUser(session['email'])
-    userAccount = c.Account(context_io, { 'id': user["context_id"] })
-    contacts = userAccount.get_contacts()
-    result = {
-        'contacts': contacts,
-        'selectedContacts': user['contacts']
-    }
+
+    if dataStore.hasContactsPopulated(session['email']) > 0:
+        result = getUserContactsDB()
+    else:
+        userAccount = c.Account(context_io, { 'id': user["context_id"] })
+        contacts = userAccount.get_contacts()
+        for contact in contacts:
+            contact.get()
+            contactDB = {'name': contact.name,
+                        'emails': contact.emails,
+                        'email': contact.emails[0],
+                        'user': session['email'],
+                        'is_selected': False,
+                        'thumbnail':contact.name,
+                        'last_received':contact.last_received,
+                        'last_sent':contact.last_sent,
+                        'count':contact.count
+                        }
+            contactNames.append(contact.emails[0])
+            contactId = session['email'] + '_' + contact.emails[0]
+            print 'contactId %s ', contactId
+            dataStore.addContact(contactId, **contactDB )
+
+        result = {
+            'contacts': contacts,
+            'selectedContacts': []
+        }
+        session['contacts'] = contactNames
     return json.dumps(result, default=lambda o: o.__dict__)
+
+@app.route('/get-contacts-db', methods=["GET"])
+def getUserContactsDB():
+    contacts = dataStore.getContactsByUser(session['email'])
+    selectedContacts =[]
+    allContacts = []
+    contactNames = []
+    print 'Calling get-contacts-from-db'
+    for contact in contacts:
+        if contact['is_selected'] == True:
+            selectedContacts.append(contact)
+            contactNames.append(contact['emails'][0])
+        allContacts.append(contact)
+
+    result = {
+        'contacts': allContacts,
+        'selectedContacts': selectedContacts
+    }
+    session['email'] = contactNames
+    return json.dumps(result)
+
 
 @app.route('/get-selected-contacts', methods=["GET"])
 def getSelectedContacts():
-    user = dataStore.getUser(session['email'])
-    return json.dumps(user['contacts'])
+    selectedContacts = []
+    contacts = dataStore.getContactsByUser(session['email'], True)
+    for contact in contacts:
+        if contact['is_selected'] == True:
+            selectedContacts.append(contact)
+    return json.dumps(selectedContacts)
 
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
@@ -553,7 +606,6 @@ def checkStatus():
             dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
             user['pending_contacts'] = True
             user['pending_sync'] = False
-            user['pending_anlysis'] = False
     # End of localhost hack
     return json.dumps({
         'pending_sync': user['pending_sync'],
@@ -566,8 +618,10 @@ def getTone():
     if('to' in request.json):
         to = request.json['to']
         userTone = dataStore.getContactToneBySenderAndReceiver(session['email'], to)
+        # print userTone
     else:
         userTone = dataStore.getContactToneBySender(session['email'])
+        # print userTone
     return json.dumps(userTone)
 
 @app.route('/get-user-tone', methods=["GET", "POST"])
@@ -601,6 +655,7 @@ def showPersonalityDashboard():
 def showToneDashboard():
     mailboxcount = dataStore.getmailboxcount(session["context_id"])
     return render_template('tone-dashboard.html', mailboxcount = mailboxcount)
+
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
 #def getMessage():
@@ -643,12 +698,6 @@ def removeAccount():
                         
         
                     
-
-
-
-
-
-
 
 
 if __name__ == "__main__":

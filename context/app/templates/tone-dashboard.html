@@ -34,269 +34,307 @@
     top: 100%;
     left: 0;
   }
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.area {
+    fill: lightsteelblue;
+    stroke-width: 0;
+}
 </style>
 <script>
-function buildTonesD3Chart(data) {
-  //Clean projectsJson data
-  var subjectviewsData = data;
 
-  subjectviewsData.forEach(function(d) {
-      d.datetime = new Date(d.datetime * 1000);
-  });
-  console.log(subjectviewsData);
 
-  /*var dateFormat = d3.time.format("%m/%d/%Y");
-      subjectviewsData.forEach(function(d) {
-      d.datetime = dateFormat.parse(d.datetime);
-              d.datetime.setDate(1);
-  });
-  */
+// d3 chart -----------------------------
 
 
 
-  //Create a Crossfilter instance
-  var ndx = crossfilter(subjectviewsData);
-  //Define Dimensions
-  var hostName = ndx.dimension(function(d) { return d.from; });
-  var subject = ndx.dimension(function(d) { return d.subject; });
-  var contact = ndx.dimension(function(d) { return d.to; });
-  var dateTime = ndx.dimension(function(d) { return d.datetime; });
+function toneChart(data, update) {
 
+  function groupByAvg(data) {
+  /* it was quicker for me to roll my own function to group and average the data 
+   by date than to learn crossfilter.js although crossfilter is likely much more efficient */
 
-  var wtConfident = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Confident"]; });
-  var wtTentative = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Tentative"]; });
-  var wtAnalytical = ndx.dimension(function(d) { return d["tone"]["Writing Tone.Analytical"]; });
+    
+   // initialize the array that will contain the flattened data
+    flattenedData = []
 
-  var stCons = ndx.dimension(function(d) { return d["tone"]["Social Tone.Conscientiousness"]; });
-  var stAgree = ndx.dimension(function(d) { return d["tone"]["Social Tone.Agreeableness"]; });
-  var stOpen = ndx.dimension(function(d) { return d["tone"]["Social Tone.Openness"]; });
+   // flatten the nested data so that it is easier to work with
+    data.forEach(function(d) {
 
-  var etNegative = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Negative"]; });
-  var etAnger = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Anger"]; });
-  var etCheer = ndx.dimension(function(d) { return d["tone"]["Emotion Tone.Cheerfulness"]; });
+      d.tone.to = d.to;
+      d.tone.from = d.from;
+      d.tone.owner = d.owner;
+      d.tone.datetime = d.datetime
 
-  var wtcGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Confident"];
-  });
-  var wttGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Tentative"];
-  });
-  var wtaGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Analytical"];
-  });
-  var stcGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Conscientiousness"];
-  });
-  var staGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Agreeableness"];
-  });
-  var stoGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Openness"];
-  });
-  var etnGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Negative"];
-  });
-  var etaGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Anger"];
-  });
-  var etcGroup = contact.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Cheerfulness"];
-  });
+      flattenedData.push(d.tone)
+    })
 
+    // group the data by datetime
+    var groupedData = _.groupBy(flattenedData, function(d) { return d.datetime }) 
+    
+    // keys that have non-numerical values and should not be aggregated
+    var metaCats = ['to', 'from', 'owner', 'datetime']
 
-  var wtcGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Confident"];
-  });
-  var wttGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Tentative"];
-  });
-  var wtaGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Writing Tone.Analytical"];
-  });
-  var stcGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Conscientiousness"];
-  });
-  var staGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Agreeableness"];
-  });
-  var stoGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Social Tone.Openness"];
-  });
-  var etnGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Negative"];
-  });
-  var etaGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Anger"];
-  });
-  var etcGroup2 = dateTime.group().reduceSum(function(d) {
-      return d["tone"]["Emotion Tone.Cheerfulness"];
-  });
+    // initialize array that will store aggregated data
+    aggData = []
 
-  var minDate = dateTime.bottom(1)[0].datetime;
-  var maxDate = dateTime.top(1)[0].datetime;
+    for (var k in groupedData) {
+      
+      // check to see if there are multiple arrays associated with a specific date
+      if (groupedData[k].length != 1) {
 
-  console.log(minDate);
-  console.log(maxDate);
+        // initialize object that will store our aggreated values for a specific date
+        aggVals = {};
 
-  /*
-  new datamin = minDate - (0.1* minDate);
-  console.log(datamin);*/
+        // iterate over the arrays associated with a specific date
+        groupedData[k].forEach(function(d) {
 
+          // iterate over the values in the data object
+          for (var c in d) {
 
+            // check to see if c is a value we don't want aggregated
+            if ( (metaCats.indexOf(c) > -1) == false){
 
-  //bin counter start
+              // if the category is already in our data object we want to add to it
+              if (c in aggVals) {
 
-  function bin_counter(group) {
-  return {
-      value: function() {
-          return group.all().filter(function(kv) {
-             return kv.value > 0;
-          }).length;
+                aggVals[c] += (d[c] / groupedData[k].length)
+
+              } else {
+
+                // avoid having to iterate again by doing the division initially
+                aggVals[c] = d[c] / groupedData[k].length
+              }
+            } else {
+
+              // add the values that we do not want aggregated to our data object
+              aggVals[c] = d[c]
+            }
+          }
+        })
+          // add our aggreated values to our final data object
+          aggData.push(aggVals)
+
+      } else {
+        // add the data from the arrays that did not have multiple arrays associated with a date to 
+        // our final data object
+        aggData.push(groupedData[k][0])
       }
-  };
-  }
+    }
+  return aggData
+  } // groupByAvg
 
-   var all = ndx.groupAll();
-  //Charts
+  // get grouped data
+  var data = groupByAvg(data);
 
-  var totalToneLine = dc.lineChart("#tone-graph", "nettone");
-  var detailsRowChart = dc.rowChart("#row-chart", "nettone");
-  var confidenceNumber = dc.numberDisplay("#number-box1", "nettone");
-  var tentativeNumber = dc.numberDisplay("#number-box2", "nettone");
-  var analyticalNumber = dc.numberDisplay("#number-box3", "nettone");
-  var conscientiounessNumber = dc.numberDisplay("#number-box4", "nettone");
-  var agreeablenessNumber = dc.numberDisplay("#number-box5", "nettone");
-  var opennessNumber = dc.numberDisplay("#number-box6", "nettone");
-  var negativeNumber = dc.numberDisplay("#number-box7", "nettone");
-  var angerNumber = dc.numberDisplay("#number-box8", "nettone");
-  var cheerfulnessNumber = dc.numberDisplay("#number-box9", "nettone");
+      // convert datetime from milliseconds
+      data.forEach(function(d) {
+        d.datetime = new Date(d.datetime * 1000);
+      })
 
+  var margin = {top: 30, right: 20, bottom: 150, left: 50},
+      width = $(".col-md-6").width() - margin.right - margin.left
+      height = 300  
 
-      confidenceNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +wtConfident.groupAll().reduceSum(function(d) { return d["tone"]["Writing Tone.Confident"]; }).value();})
-          .group(bin_counter(wtcGroup));
+  // scale the x data
+  var x = d3.time.scale()
+      .range([0, width]);
 
-      tentativeNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +wtTentative.groupAll().reduceSum(function(d) { return d["tone"]["Writing Tone.Tentative"]; }).value();})
-          .group(bin_counter(wttGroup));
-      analyticalNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +wtAnalytical.groupAll().reduceSum(function(d) { return d["tone"]["Writing Tone.Analytical"]; }).value();})
-          .group(bin_counter(wtaGroup));
-      conscientiounessNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +stCons.groupAll().reduceSum(function(d) { return d["tone"]["Social Tone.Conscientiousness"]; }).value();})
-          .group(bin_counter(stcGroup));
-      agreeablenessNumber
-          .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +stAgree.groupAll().reduceSum(function(d) { return d["tone"]["Social Tone.Agreeableness"]; }).value();})
-          .group(bin_counter(staGroup));
-      opennessNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +stOpen.groupAll().reduceSum(function(d) { return d["tone"]["Social Tone.Openness"]; }).value();})
-          .group(bin_counter(stoGroup));
-      negativeNumber
-           .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +etNegative.groupAll().reduceSum(function(d) { return d["tone"]["Emotion Tone.Negative"]; }).value();})
-          .group(bin_counter(etnGroup));
-      angerNumber
-          .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +etAnger.groupAll().reduceSum(function(d) { return d["tone"]["Emotion Tone.Anger"]; }).value();})
-          .group(bin_counter(etaGroup));
-      cheerfulnessNumber
-          .formatNumber(d3.format(".3n"))
-          .valueAccessor(function(x){ return +etCheer.groupAll().reduceSum(function(d) { return d["tone"]["Emotion Tone.Cheerfulness"]; }).value();})
-          .group(bin_counter(etcGroup));
+  //scale the y data
+  var y = d3.scale.linear()
+      .range([height, 0]);
 
+  var xAxis = d3.svg.axis()
+      .scale(x)    
+      .tickSize(0) // remove tick lines
+      .orient("bottom");
 
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .ticks(10, "%")
+      .orient("left");
 
-  detailsRowChart
-      //.width(300)
-      .height(250)
-      .margins({top: 10, right: 50, bottom: 30, left: 10})
-      .transitionDuration(1000)
-      .dimension(wtConfident)
-      .gap(10)
-      .group(wtcGroup2)
-      .ordinalColors(["#eb5768","#2bbf9f","#3E94EF"])
-      .ordering(function(d) { return -d.key })
-      .label(function(d){
-              return d.key + " : " + (d.value / ndx.groupAll().reduceCount().value() * 100).toFixed(1) + "%";
-          })
-      .elasticX(true)
-      .xAxis().ticks(8);
+  if (update == true) {
+    updateContactData(data)
+  } else {
+
+  // initialize area object for filling the area under the line
+  var area = d3.svg.area()
+      .x(function(d) { return x(d.datetime); })
+      .y0(height)
+      .y1(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+  // initialize line object
+  var line = d3.svg.line()
+      .interpolate("linear") 
+      .x(function(d) { return x(d.datetime); })
+      .y(function(d) { return y(d['Social Tone.Conscientiousness']); });
+
+  var svg = d3.select("#tone-graph").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+     x.domain(d3.extent(data, function(d) { return d.datetime; }));
+     y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
+
+    svg.append("path")
+            .datum(data)
+            .attr("class", "area")
+            .attr("d", area);
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(-10," + (height + 30) + ")")
+          .call(xAxis)
+            .selectAll('text')
+            .attr("transform", "rotate(-65)" )
 
 
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
 
 
-  function ttl(param, chartName){
-      totalToneLine
-          //.width(600)
-          .height(420)
-          .margins({top: 10, right: 30, bottom: 30, left: 50})
-          .dimension(dateTime)
-          .group(param, chartName)
-          .brushOn(false)
-          .renderArea(false)
-          .elasticY(true)
-          .elasticX(true)
-          .transitionDuration(500)
-          .x(d3.time.scale().domain([minDate, maxDate]))
-              .renderlet(function(chart) {
-      chart.svg().select('.chart-body').attr('clip-path', null)
-  })
+      svg.append("path")
+          .datum(data)
+          .attr("class", "line")
+          .attr("d", line);
 
-          .renderHorizontalGridLines(true)
-          .renderVerticalGridLines(true)
-          .legend(dc.legend().x(70).y(20).itemHeight(8).gap(4))
-          .xAxis().tickFormat(d3.time. format('%d/%m/%y'));
-  }
-  ttl(stcGroup2, "Conscientiousness");
+} // else
 
-      dc.dataCount("#row-selection")
-      .dimension(ndx)
-      .group(all);
+  function updateData(cat) {
 
-      dc.renderAll();
-      dc.renderAll("nettone");
+      var svg = d3.select("svg")
 
-  $("#totalToneList").change(function(){
-      var selectedVal = $(this).val();
+        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        y.domain(d3.extent(data, function(d) { return d[cat]; }));
 
-      if(selectedVal == "Conscientiousness"){
-          ttl(stcGroup2, "Conscientiousness");
-      }
-      else if(selectedVal == "Agreeableness"){
-          ttl(staGroup2, "Agreeableness");
-      }
+        svg.select('.x.axis')
+          .call(xAxis)
+          .selectAll('text')
+          .attr("transform", "rotate(-65)" )
 
-      else if(selectedVal == "Confident"){
-          ttl(wtcGroup2, "Confident");
-      }
-      else if(selectedVal == "Tentative"){
-          ttl(wttGroup2, "Tentative");
-      }
-      else if(selectedVal == "Analytical"){
-          ttl(wtaGroup2, "Analytical");
-      }
-      else if(selectedVal == "Openness"){
-          ttl(stoGroup2, "Openness");
-      }
-      else if(selectedVal == "Negative"){
-          ttl(etnGroup2, "Negative");
-      }
-      else if(selectedVal == "Anger"){
-          ttl(etaGroup2, "Anger");
-      }
-      else if(selectedVal == "Cheerfulness"){
-          ttl(etcGroup2, "Cheerfulness");
-      }
-      dc.renderAll("nettone");
-  });
+        svg.select('.y.axis')
+          .call(yAxis)
+
+      var line = d3.svg.line()
+        .interpolate("linear") 
+        .x(function(d) { return x(d.datetime); })
+        .y(function(d) { return y(d[cat]); });
+
+      var path = svg.select('.line').datum(data)
+
+        path.append("path")
+          .attr("class", "line");
+      
+        path.transition()
+          .duration('400')
+          .ease("quad")
+          .attr("d", line);
+
+      var area = d3.svg.area()
+          .x(function(d) { return x(d.datetime); })
+          .y0(height)
+          .y1(function(d) { return y(d[cat]); });
+
+      var area2 = svg.select('.area').datum(data)
+    
+          area2.append("path")
+            .attr("class", "area")
+                  
+          // enter the new data
+            area2.transition()
+              .duration('400')
+              .ease('quad')
+              .attr("d", area);    
+
+    } // update data
+
+      $("#totalToneList").change(function(){
+        cat = $(this)[0].selectedOptions[0].id
+        updateData(cat)
+      })
+
+  function updateContactData(data) {
+        
+      // get selected category
+      var cat = $("#totalToneList")[0].selectedOptions[0].id
+
+      // select svg       
+      var svg = d3.select("svg")
+
+        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        y.domain(d3.extent(data, function(d) { return d[cat]; }));
+
+        // create x axis
+        svg.select('.x.axis')
+          .call(xAxis)
+            .selectAll('text')
+            .attr("transform", "rotate(-65)" )
+
+        // create y axis
+        svg.select('.y.axis')
+          .call(yAxis)
+
+      // initialize line object
+      var line = d3.svg.line()
+        .interpolate("linear") 
+        .x(function(d) { return x(d.datetime); })
+        .y(function(d) { return y(d[cat]); });
+
+      // initialize path of line
+      var path = svg.select('.line').datum(data)
+
+          path.append("path")
+            .attr("class", "line");
+        
+          path.transition()
+            .duration('400')
+            .ease("linear")
+            .attr("d", line);
+
+      // initialize area object
+      var area = d3.svg.area()
+          .x(function(d) { return x(d.datetime); })
+          .y0(height)
+          .y1(function(d) { return y(d[cat]); });
+
+      // select section of svg where the area data should be bound to
+      var area2 = svg.select('.area').datum(data)
+          
+          area2
+            .append("path")
+            .attr("class", "area")
+                  
+          // enter the new data
+          area2.transition()
+            .duration('400')
+            .ease('linear')
+            .attr("d", area); 
+
+
+  } // updateContactData
+
 }
+
+
 </script>
 <div class="row" ng-controller="ToneController as dashboard">
   <div class="col-sm-12">
@@ -326,7 +364,7 @@ function buildTonesD3Chart(data) {
             <select class="form-control pull-right" id="selectContact"
               ng-model="dashboard.selectedContact"
               ng-options="contact as (contact.name ? contact.name : contact.emails[0]) for contact in dashboard.contacts"
-              ng-change="dashboard.getContactTone()"
+              ng-change="dashboard.getContactTone(true)"
               ng-disabled="dashboard.toneSwitch=='user'">
               <option value="">--- Select a contact ---</option>
             </select>
@@ -359,15 +397,15 @@ function buildTonesD3Chart(data) {
                 <label class="control-label" style="padding-top: 5px;">Tone Over Time</label>
                 <div class="col-md-6  pull-right">
                   <select id="totalToneList" class="form-control">
-                    <option value="Conscientiousness" selected="selected">Conscientiousness</option>
-                    <option value="Agreeableness">Agreeableness</option>
-                    <option value="Analytical">Analytical</option>
-                    <option value="Anger">Anger</option>
-                    <option value="Confident">Confident</option>
-                    <option value="Cheerfulness">Cheerfulness</option>
-                    <option value="Negative">Negative</option>
-                    <option value="Openness">Openness</option>
-                    <option value="Tentative">Tentative</option>
+                    <option id='Social Tone.Conscientiousness' value="Conscientiousness" selected="selected">Conscientiousness</option>
+                    <option id='Social Tone.Agreeableness' value="Agreeableness">Agreeableness</option>
+                    <option id='Writing Tone.Analytical' value="Analytical">Analytical</option>
+                    <option id='Emotion Tone.Anger'  value="Anger">Anger</option>
+                    <option id='Writing Tone.Confident' value="Confident">Confident</option>
+                    <option id='Emotion Tone.Cheerfulness' value="Cheerfulness">Cheerfulness</option>
+                    <option id='Emotion Tone.Negative' value="Negative">Negative</option>
+                    <option id='Social Tone.Openness'value="Openness">Openness</option>
+                    <option id='Writing Tone.Tentative' value="Tentative">Tentative</option>
                   </select>
                 </div>
               </div>
@@ -381,6 +419,7 @@ function buildTonesD3Chart(data) {
     </div>
   </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 <script src="{{ url_for('static', filename='js/dc.js')}}"></script>

@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from pymongo.collection import ReturnDocument 
 from helpers.parser import Parser
 import json
 from nouslog import log
@@ -59,6 +60,7 @@ class DataStore:
         relationshipsCollection.remove({ '_id': contact['emails'][0] + '-->' + id, 'owner': id })
         print id + '-->' + contact['emails'][0]
         relationshipsCollection.remove({ '_id': id + '-->' + contact['emails'][0], 'owner': id })
+
 
     def saveMessages(self, messages):
         messagesCollection = self.db.messages
@@ -145,18 +147,46 @@ class DataStore:
             result.append(msg)
         return result
 
+    def addContact(self, contactId, **contact):
+        contactsCollection = self.db.contacts
+        newContact = contactsCollection.update( {'_id': contactId}, {"$set": contact}, upsert = True)
+        return newContact
+
+    def updateContactStatus(self, contactId, status):
+        contactsCollection = self.db.contacts
+        newContact = contactsCollection.find_one_and_update( {'_id': contactId}, {'$set': { 'is_selected': status }}, return_document=ReturnDocument.AFTER )
+        print 'find and update ', newContact
+        return newContact
+
+    def getContactsByUser(self,  userEmail, selected=None):
+        contactsCollection = self.db.contacts
+        print 'getContactsByUser ',  userEmail
+        if selected is None:
+            # get all contacts
+            return contactsCollection.find( {'user': userEmail} )
+        elif selected is True:
+            return contactsCollection.find( {'user': userEmail, 'is_selected': True} )
+        elif selected is False:
+            return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
+
+    def hasContactsPopulated(self, userEmail):
+        contactsCollection = self.db.contactsCollection
+        return contactsCollection.find( {'user': userEmail}).count()
+
+
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
         return list(relationshipsCollection.find({'hostemail':userEmail}))
 
-    def saveContactInfo(self, owner, userFirstName, userEmail, contactInfo):
+    def saveRelationshipInfo(self, owner, userFirstName, userEmail, contactInfo):
         relationshipsCollection = self.db.relationships
         messagesCollection = self.db.messages
 
         msgsForTone  = messagesCollection.find({'from':contactInfo['email'], 'to': userEmail}).sort('datetime', 1)
         mList = []
         for m in msgsForTone:
-            mList.append(m['avgTone'])
+            if 'avgTone' in m:
+                mList.append(m['avgTone'])
 
         limitedMessages = list(messagesCollection.aggregate([
                      { '$match': {'from':contactInfo['email'], 'to': userEmail} },
