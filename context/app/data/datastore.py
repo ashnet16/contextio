@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from pymongo.collection import ReturnDocument 
+from pymongo.collection import ReturnDocument
 from helpers.parser import Parser
 import json
 from nouslog import log
@@ -40,6 +40,11 @@ class DataStore:
     def updateUser(self, id, **user):
         users = self.db.users
         result = users.update_one({ '_id': id }, { '$set': user })
+        return result == 1
+
+    def addUserSource(self, context_id, source):
+        users = self.db.users
+        result = users.update_one({ 'context_id': context_id }, { '$push': { 'sources': source } })
         return result == 1
 
     def addUserContact(self, id, **contact):
@@ -274,5 +279,3 @@ class DataStore:
 
 
     #def getMessages(self, email):
-
-
