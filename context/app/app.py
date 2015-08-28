@@ -365,6 +365,10 @@ def sendUserInfo():
                 'first_name': firstName
             }
             account = context_io.post_account(**accountData)
+            account.post_webhook(**{
+                "callback_url": url_for('newMailCallback', _external=True),
+                'failure_notif_url': url_for('newMailFailureCallback', _external=True)
+            })
             dataStore.updateUser(user['_id'], **{'context_id': account.id})
             session["context_id"] = account.id
         else:
@@ -620,7 +624,7 @@ def getSelectedContacts():
 def checkStatus():
     user = dataStore.getUser(session['email'])
     # The following is a hack to get around limitation with callbacks to localhost
-    if(user['pending_sync'] and 'localhost' in url_for('inbox', _external=True)):
+    if(user['pending_sync']): #and 'localhost' in url_for('inbox', _external=True)):
         params = {
             'id': user["context_id"]
         }
