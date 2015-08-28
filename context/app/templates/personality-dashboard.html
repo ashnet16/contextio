@@ -30,56 +30,97 @@
 }
 
 .list-group-item {
-
+ /*background: linear-gradient(to right, #bada55 0%, #bada55 50%,rgba(255,255,255,1) 51%,rgba(255,255,255,1) 100%);*/
 }
+
+
 </style>
 <script>
-function buildPersonalityChart(dataset, divClass,update) {
+
+ 
+function buildPersonalityChart(contactData, update) {
+ 
+
+  // contains both the user and contact data - set in the angular controller
+  var mergedData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.mergedViewData
+   var data = []
+
+
+   mergedData[0].children.forEach(function(d) {
+    iobj = {};
+    iobj.cat = d.name
+    iobj.data = []
+    d.children.forEach(function(dd) {
+    obj = {}
+    obj.name = dd.name;
+    obj.user = dd.percentage
+    iobj.data.push(obj)
+    })
+    data.push(iobj)
+  })
+
+
+  contactData.forEach(function(d,i) {
+    d.data.forEach(function(dd,ii) {
+      data[i].data[ii].contact = dd
+    })
+      
+  })
+
+
 
 
     var margin = {top: 30, right: 20, bottom: 150, left: 40},
-        width = $(".col-md-6").width() - margin.right - margin.left
-        height = 300  
+        width = $(".col-md-12").width() - margin.right - margin.left
+        height = 300 
 
-    var x = d3.scale.ordinal()
-        .rangeRoundBands([0, width], .1);
+  var index = $('.list-group-item').closest(".selected")[0].id
 
-    var y = d3.scale.linear()
-        .range([height, 0]);
+  var x0 = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
 
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .tickSize(0) // remove tick lines
-        .orient("bottom")
+var x1 = d3.scale.ordinal();
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .ticks(10, "%");
+var y = d3.scale.linear()
+    .range([height, 0]);
 
-    // check to see if the user has selected a new contact
-  if (update == true) {
-    updateContactData(dataset)
-  } else {
+var color = d3.scale.ordinal()
+    .range(["#98abc5", "#8a89a6"]);
 
-    // initial data
-    var data = dataset.children[0].children
+var xAxis = d3.svg.axis()
+    .scale(x0)
+    .orient("bottom");
 
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(10, "%");
 
-    var svg = d3.select("." + divClass).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var svg = d3.select(".chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
-  // scale the data
-  x.domain(data.map(function(d) { return d.name; }));
-  y.domain([0, d3.max(data, function(d) { return d.percentage; })]);
+ if (update == true) {
+      i = $('.list-group-item').closest(".selected")[0].id
+      updateData(i, data, update)
+  } else{
+
+  var userValues = d3.keys(data[index].data[0]).filter(function(key) { return key !== "name"  });
+  data[index].data.forEach(function(d) {
+    d.values = userValues.map(function(name) { 
+      return {name: name, value: +d[name]}; 
+    });
+  });
+
+  x0.domain(data[index].data.map(function(d) { return d.name; }));
+  x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
+  y.domain([0, d3.max(data[index].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
 
   svg.append("g")
       .attr("class", "x axis")
-      .attr("id","bar-x-axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
 
@@ -87,36 +128,76 @@ function buildPersonalityChart(dataset, divClass,update) {
       .attr("class", "y axis")
       .call(yAxis)
     .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", ".45em")
 
 
-  // create the initial bars
-  svg.selectAll(".bar")
-      .data(data)
+  var state = svg.selectAll("rect")
+      .data(data[index].data)
+    .enter().append("g")
+      .attr("class", "g")
+      .attr("transform", function(d) { return "translate(" + x0(d.name) + ",0)"; });
+
+  state.selectAll("rect")
+      .data(function(d) { return d.values; })
     .enter().append("rect")
-      .attr("class", "bar")
-      .attr("x", function(d) { return x(d.name); })
-      .attr("width", x.rangeBand())
-      .attr("y", function(d) { return y(d.percentage); })
-      .attr("height", function(d) { return height - y(d.percentage); });
+      .attr("class","bar")
+      .attr("width", x1.rangeBand())
+      .attr("x", function(d) { return x1(d.name); })
+      .attr("y", function(d) { return y(d.value); })
+      .attr("height", function(d) { return  height - y(d.value); })
+      .style("fill", function(d) { return color(d.name); });
+  
+  var legend = svg.selectAll(".legend")
+      .data(userValues.slice().reverse())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
-}
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
 
-  function updateData(i) {
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+  }
+
+  function updateData(i, dataset, update) {
+    if (update == true) {
+          var data = dataset 
+    console.log(i)
+
+    } 
   /* main function to update the data when a user selects a new big 5 category */
 
     // each of the Big 5 id elements corresponds to it's index within the data
-    data = dataset.children[i].children
     
   // select the proper svg - this is key to making sure the correct data is updated 
-  var svg = d3.select("." + divClass).select("g")
+  var svg = d3.select(".chart")
 
 
-    // scale the new data
-    x.domain(data.map(function(d) { return d.name; }));
-    y.domain([0, d3.max(data, function(d) { return d.percentage; })]);
+s=[]
+
+ var userValues = d3.keys(data[i].data[1]).filter(function(key) { return key !== "name" && key !== "values" });
+  data[i].data.forEach(function(d) {
+    d.values = userValues.map(function(name) { 
+      console.log(name)
+      if (name != "values") {
+      s.push({name: name, value: +d[name]})
+
+
+      }
+      return {name: name, value: +d[name]}; 
+    });
+  });
+
+  x0.domain(data[i].data.map(function(d) { return d.name; }));
+  x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
+  y.domain([0, d3.max(data[i].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
 
     svg.select('.x.axis')
       .call(xAxis);
@@ -128,23 +209,26 @@ function buildPersonalityChart(dataset, divClass,update) {
         .attr("transform", "rotate(-90)")
         .attr("y", 6)
         .attr("dy", ".51em")
-        
-  var bar = svg.selectAll("rect").data(data, function(d) {return d.percentage});
 
-    // initialize the new bars
+
+
+  var bar = svg.selectAll(".bar").data(s)
+
     bar.enter()
-      .append("rect")
-      .attr("class", "bar")
 
+    bar.selectAll(".bar").append("rect").attr("class", "bar")
 
-    // transition to new data
     bar.transition()
-      .duration(100)
+      .duration(300)
       .ease("quad")
-      .attr("x", function(d) { return x(d.name); })
-      .attr("width", x.rangeBand())
-      .attr("y", function(d) { return y(d.percentage); })
-      .attr("height", function(d) { return height - y(d.percentage); })
+      .attr("width", x1.rangeBand())
+      .attr("x", function(d) { 
+        return x1(d.name); 
+      })
+      .attr("y", function(d) { 
+        return y(d.value); })
+      .attr("height", function(d) { return  height - y(d.value); })
+      .style("fill", function(d) { return color(d.name); });
 
     // remove the previous data
     bar.exit()
@@ -156,8 +240,28 @@ function buildPersonalityChart(dataset, divClass,update) {
 
   }   
 
-    $('.list-group-item').click(function(){
+
+  // var legend = svg.selectAll(".legend")
+  //     .data(userValues.slice().reverse())
+  //   .enter().append("g")
+  //     .attr("class", "legend")
+  //     .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  // legend.append("rect")
+  //     .attr("x", width - 18)
+  //     .attr("width", 18)
+  //     .attr("height", 18)
+  //     .style("fill", color);
+
+  // legend.append("text")
+  //     .attr("x", width - 24)
+  //     .attr("y", 9)
+  //     .attr("dy", ".35em")
+  //     .style("text-anchor", "end")
+  //     .text(function(d) { return d; });
+    $('.list-group-item').click(function(e){
       
+
       // each of the Big 5 id elements corresponds to it's index within the data
       i = $(this)[0].id
 
@@ -176,64 +280,7 @@ function buildPersonalityChart(dataset, divClass,update) {
       // update data
       updateData(i)
     })
-
-  function updateContactData(dataset) {
-    /* main function that updates the data when a new contact is selected */
-
-
-      // get the correct index of the big 5 categor
-      var i = $('.list-group-item').closest(".selected")[0].id
-      
-      // initial data
-      var data = dataset.children[i].children
-
-      // select the already existing svg
-      var svg = d3.select(".contact-chart").select("g")
-
-       // scale the new data
-        x.domain(data.map(function(d) { return d.name; }));
-        y.domain([0, d3.max(data, function(d) { return d.percentage; })]);
-
-        // create the x axis
-        svg.select('.x.axis')
-            .call(xAxis);
-
-        // create the y axis
-        svg.select('.y.axis')
-            .call(yAxis)
-          .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".51em")
-              
-      // select the existing rectangles
-      var bar = svg.selectAll("rect").data(data, function(d) {return d.percentage});
-
-        // initialize the new bars
-        bar.enter()
-          .append("rect")
-          .attr("class", "bar")
-
-        // transition to new data
-        bar.transition()
-          .duration(100)
-          .ease("quad")
-          .attr("x", function(d) { return x(d.name); })
-          .attr("width", x.rangeBand())
-          .attr("y", function(d) { return y(d.percentage); })
-          .attr("height", function(d) { return height - y(d.percentage); })
-
-        // remove the previous data
-        bar.exit()
-          .transition()
-          .duration(200)
-          .ease("quad")
-          .attr("width", 0)
-          .remove();
-  }
-
- } // end personalityChart
-
+}
 </script>
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
@@ -259,7 +306,7 @@ function buildPersonalityChart(dataset, divClass,update) {
     <div class="col-md-6">
       <!-- Big 5 for user goes here -->
       <!-- <p>[[dashboard.userPersonality]]</p> -->
-            <ul class="list-group">
+            <ul class="list-group user">
               <button type="button" class="list-group-item user selected" id="0" onclick="this.blur();">Openness</button>
               <button type="button" class="list-group-item user" id="1" onclick="this.blur();">Conscientiousness</button>
               <button type="button" class="list-group-item user" id="2" onclick="this.blur();">Extraversion</button>
@@ -270,7 +317,7 @@ function buildPersonalityChart(dataset, divClass,update) {
     <div class="col-md-6">
       <!-- Big 5 for selected contact goes here -->
       <!-- <p>[[dashboard.contactPersonality]]</p> -->
-            <ul class="list-group" >
+            <ul class="list-group contact" >
               <button type="button" class="list-group-item contact selected" id="0" onclick="this.blur();">Openness</button>
               <button type="button" class="list-group-item contact" id="1" onclick="this.blur();">Conscientiousness</button>
               <button type="button" class="list-group-item contact" id="2" onclick="this.blur();">Extraversion</button>
@@ -284,14 +331,16 @@ function buildPersonalityChart(dataset, divClass,update) {
     <div class="col-md-12 breakdown-title">
       <p>Breaking it down: OPENNESS</p>
     </div>
-    <div class="col-md-6 user-chart">
-
-
+    <div class="col-md-12 personality-chart">
     </div>
-    <div class="col-md-6 contact-chart">
 
-    </div>
 </div>
+<div class="row">
+  <div class="col-md-12">
+<div class="chart">
+  </div>
+  </div>
+  </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
