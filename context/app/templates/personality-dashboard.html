@@ -10,7 +10,7 @@
 }
 
 .axis {
-  font: 8px sans-serif;
+  font: 12px sans-serif;
 }
 
 .axis path,
@@ -29,10 +29,6 @@
   font-size: 18px;
 }
 
-.list-group-item {
- /*background: linear-gradient(to right, #bada55 0%, #bada55 50%,rgba(255,255,255,1) 51%,rgba(255,255,255,1) 100%);*/
-}
-
 
 </style>
 <script>
@@ -42,24 +38,25 @@ function buildPersonalityChart(contactData, update) {
  
 
   // contains both the user and contact data - set in the angular controller
-  var mergedData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.mergedViewData
-   var data = []
+  var userData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.userPersonality
+  // initialize array where data for chart will be kept
+  var data = []
 
-
-   mergedData[0].children.forEach(function(d) {
-    iobj = {};
-    iobj.cat = d.name
-    iobj.data = []
+  // flatten and extract our user data to make it easier to work with
+   userData.children.forEach(function(d) {
+    obj = {};
+    obj.cat = d.name
+    obj.data = []
     d.children.forEach(function(dd) {
-    obj = {}
-    obj.name = dd.name;
-    obj.user = dd.percentage
-    iobj.data.push(obj)
-    })
-    data.push(iobj)
+      childeObj = {}
+      childeObj.name = dd.name;
+      childeObj.user = dd.percentage
+      obj.data.push(childeObj)
+      })
+    data.push(obj)
   })
 
-
+  // merge the contact data with the user data 
   contactData.forEach(function(d,i) {
     d.data.forEach(function(dd,ii) {
       data[i].data[ii].contact = dd
@@ -67,54 +64,63 @@ function buildPersonalityChart(contactData, update) {
       
   })
 
-
-
-
     var margin = {top: 30, right: 20, bottom: 150, left: 40},
         width = $(".col-md-12").width() - margin.right - margin.left
         height = 300 
 
-  var index = $('.list-group-item').closest(".selected")[0].id
+    // each of the Big 5 id elements corresponds to it's index within the data
+    var index = $('.list-group-item').closest(".selected")[0].id
 
-  var x0 = d3.scale.ordinal()
-    .rangeRoundBands([0, width], .1);
+    var x0 = d3.scale.ordinal()
+      .rangeRoundBands([0, width], .1);
 
-var x1 = d3.scale.ordinal();
+    var x1 = d3.scale.ordinal();
 
-var y = d3.scale.linear()
-    .range([height, 0]);
+    var y = d3.scale.linear()
+        .range([height, 0]);
 
-var color = d3.scale.ordinal()
-    .range(["#98abc5", "#8a89a6"]);
+    // set the color for the user and contact
+    var color = d3.scale.ordinal()
+        .range(["#2980b9", "#34495e"]);
 
-var xAxis = d3.svg.axis()
-    .scale(x0)
-    .orient("bottom");
+    var xAxis = d3.svg.axis()
+        .scale(x0)
+        .orient("bottom");
 
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left")
-    .ticks(10, "%");
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(10, "%");
 
-var svg = d3.select(".chart").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    var svg = d3.select(".chart").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    // check to see if the user has chosen a big 5 category to view
+    if (update == true) {
+      
+      // index allows us to know which element in the data array should be chosen
+      index = $('.list-group-item').closest(".selected")[0].id
 
- if (update == true) {
-      i = $('.list-group-item').closest(".selected")[0].id
-      updateData(i, data, update)
-  } else{
+      // update the data
+      updateData(index, data, update)
+    } else{
 
+  // used to create a new object that will allow us to create the grouped bar chart
   var userValues = d3.keys(data[index].data[0]).filter(function(key) { return key !== "name"  });
+  
+  // create the new object that stores the data in a format that allows easy creation of the 
+  // grouped bar chart
   data[index].data.forEach(function(d) {
     d.values = userValues.map(function(name) { 
       return {name: name, value: +d[name]}; 
     });
   });
 
+  
+  // scale our data
   x0.domain(data[index].data.map(function(d) { return d.name; }));
   x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
   y.domain([0, d3.max(data[index].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
@@ -129,14 +135,18 @@ var svg = d3.select(".chart").append("svg")
       .call(yAxis)
     .append("text")
 
-
-  var state = svg.selectAll("rect")
+  // initialize the bars for the chart
+  // in d3, a dataset for a group bar chart looks like {key1:val, key2:val, key3: array }
+  // we need to first bind the key3 array to our g's and create the g elements
+  var bar = svg.selectAll("rect")
       .data(data[index].data)
     .enter().append("g")
       .attr("class", "g")
       .attr("transform", function(d) { return "translate(" + x0(d.name) + ",0)"; });
 
-  state.selectAll("rect")
+  // bind the data in the object created around line 115 to rects and set their attributes
+  // based on the data
+  bar.selectAll("rect")
       .data(function(d) { return d.values; })
     .enter().append("rect")
       .attr("class","bar")
@@ -146,18 +156,21 @@ var svg = d3.select(".chart").append("svg")
       .attr("height", function(d) { return  height - y(d.value); })
       .style("fill", function(d) { return color(d.name); });
   
+  // initialize the legend
   var legend = svg.selectAll(".legend")
       .data(userValues.slice().reverse())
     .enter().append("g")
       .attr("class", "legend")
       .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
+  // create the tiny square to indicate which color belongs to the user and contact
   legend.append("rect")
       .attr("x", width - 18)
       .attr("width", 18)
       .attr("height", 18)
       .style("fill", color);
 
+  // add the labels to the legend
   legend.append("text")
       .attr("x", width - 24)
       .attr("y", 9)
@@ -167,37 +180,38 @@ var svg = d3.select(".chart").append("svg")
   }
 
   function updateData(i, dataset, update) {
-    if (update == true) {
-          var data = dataset 
-    console.log(i)
+    /* 
+      function to update the data when the user selects a new big 5 cat or a new contact is chosen
+      the dataset parameter is optional - its only required when a new contact is selected
+      it is not needed to update the chart of the selected contact
+    */
 
-    } 
-  /* main function to update the data when a user selects a new big 5 category */
-
-    // each of the Big 5 id elements corresponds to it's index within the data
-    
-  // select the proper svg - this is key to making sure the correct data is updated 
+  // select the proper svg
   var svg = d3.select(".chart")
 
+  // initialize our data array that will hold the updated data
+  // this is needed for when a user selects a new contact
+  // d3 updates data by looking for new key-value pairs in the data
+  // the way a grouped bar chart requires data makes it difficult to perform the update in 
+  // a traditional way (i'll add more about this later - it's tricky until you grasp what's going on behind the scenes)
+  updatedData=[]
 
-s=[]
-
- var userValues = d3.keys(data[i].data[1]).filter(function(key) { return key !== "name" && key !== "values" });
-  data[i].data.forEach(function(d) {
-    d.values = userValues.map(function(name) { 
-      console.log(name)
-      if (name != "values") {
-      s.push({name: name, value: +d[name]})
+  var userValues = d3.keys(data[i].data[1]).filter(function(key) { return key !== "name" && key !== "values" });
 
 
-      }
-      return {name: name, value: +d[name]}; 
+    data[i].data.forEach(function(d) {
+      d.values = userValues.map(function(name) { 
+        
+        // push the data needed for updating the contact
+        updatedData.push({name: name, value: +d[name]})
+
+        return {name: name, value: +d[name]}; 
+      });
     });
-  });
 
-  x0.domain(data[i].data.map(function(d) { return d.name; }));
-  x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
-  y.domain([0, d3.max(data[i].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
+    x0.domain(data[i].data.map(function(d) { return d.name; }));
+    x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
+    y.domain([0, d3.max(data[i].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
 
     svg.select('.x.axis')
       .call(xAxis);
@@ -210,14 +224,15 @@ s=[]
         .attr("y", 6)
         .attr("dy", ".51em")
 
-
-
-  var bar = svg.selectAll(".bar").data(s)
+  // this is the key to updating data 
+  var bar = svg.selectAll(".bar").data(updatedData)
 
     bar.enter()
 
+    // initialize our rects that will contain the new data
     bar.selectAll(".bar").append("rect").attr("class", "bar")
 
+    // update the existing bars with the new data
     bar.transition()
       .duration(300)
       .ease("quad")
@@ -238,27 +253,28 @@ s=[]
       .attr("width", 0)
       .remove();
 
+  // update the legend
+  var legend = svg.selectAll(".legend")
+      .data(userValues.slice().reverse())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
   }   
 
 
-  // var legend = svg.selectAll(".legend")
-  //     .data(userValues.slice().reverse())
-  //   .enter().append("g")
-  //     .attr("class", "legend")
-  //     .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-  // legend.append("rect")
-  //     .attr("x", width - 18)
-  //     .attr("width", 18)
-  //     .attr("height", 18)
-  //     .style("fill", color);
-
-  // legend.append("text")
-  //     .attr("x", width - 24)
-  //     .attr("y", 9)
-  //     .attr("dy", ".35em")
-  //     .style("text-anchor", "end")
-  //     .text(function(d) { return d; });
     $('.list-group-item').click(function(e){
       
 
@@ -278,7 +294,15 @@ s=[]
       $(".breakdown-title").text('Breaking it down: ' + category)
 
       // update data
-      updateData(i)
+      updateData(i,data,false)
+      populatePersonalityTable(data, i)
+    })
+}
+
+function populatePersonalityTable(data, i) {
+  data[i].data.forEach(function(d,i) {
+    console.log(i)
+    $("#"+i).append("<tr id="+i+"><td>"+d.name+"</td></tr>")
     })
 }
 </script>
@@ -306,13 +330,15 @@ s=[]
     <div class="col-md-6">
       <!-- Big 5 for user goes here -->
       <!-- <p>[[dashboard.userPersonality]]</p> -->
-            <ul class="list-group user">
-              <button type="button" class="list-group-item user selected" id="0" onclick="this.blur();">Openness</button>
-              <button type="button" class="list-group-item user" id="1" onclick="this.blur();">Conscientiousness</button>
-              <button type="button" class="list-group-item user" id="2" onclick="this.blur();">Extraversion</button>
-              <button type="button" class="list-group-item user" id="3" onclick="this.blur();">Agreeableness</button>
-              <button type="button" class="list-group-item user" id="4" onclick="this.blur();">Emotional Range</button>
-            </ul>
+        <table class="table">
+    <tr>
+    <th>&nbsp;</th><th>User</th><th>Contact</th>
+    </tr>
+    <tr id=0></tr>
+
+
+        </table>
+
     </div>
     <div class="col-md-6">
       <!-- Big 5 for selected contact goes here -->
