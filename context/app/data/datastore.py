@@ -77,7 +77,7 @@ class DataStore:
 
     def saveMessage(self, **message):
         messagesCollection = self.db.messages
-        result = messagesCollection.insert_one(message).inserted_id
+        result = messagesCollection.update({'_id': message['_id']}, message, True)
         return message
 
     def savePersonality(self, **personality):
