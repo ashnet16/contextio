@@ -317,45 +317,55 @@ def mailboxSyncCallback():
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
 def sendUserInfo():
-    firstName = request.json["firstName"]
-    email = request.json["email"]
-    password = request.json["password"]
-    # Check if the user exists
-    user = dataStore.getUser(email);
-    error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
-    if user != None:
-        # Compare password
-        if pbkdf2_sha256.verify(password, user["password"]) == True:
-            session["context_id"] = user["context_id"]
+    try:
+        firstName = request.json["firstName"]
+        email = request.json["email"]
+        password = request.json["password"]
+        # Check if the user exists
+        user = dataStore.getUser(email);
+        error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
+        if user != None:
+            # Compare password
+            if pbkdf2_sha256.verify(password, user["password"]) == True:
+                session["context_id"] = user["context_id"]
+            else:
+                return json.dumps({ 'success': False, 'error': error });
+        elif firstName != '':
+            user = dataStore.createUser(**{
+                '_id': email,
+                'firstname': firstName,
+                'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
+                'contacts': [],
+                'pending_sync': False,
+                'pending_contacts': False,
+                'pending_analysis': False,
+                'mailboxes': 0      # Test Ashley
+            });
+            accountData = {
+                'email': email,
+                'first_name': firstName
+            }
+            account = context_io.post_account(**accountData)
+            dataStore.updateUser(user['_id'], **{'context_id': account.id})
+            session["context_id"] = account.id
         else:
-            return render_template('userLogin.html',error=error) #may not be able to use this
-    else:
-        user = dataStore.createUser(**{
-            '_id': email,
-            'firstname': firstName,
-            'sources': [email],
-            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
-            'contacts': [],
-            'pending_sync': True,
-            'pending_contacts': False,
-            'pending_analysis': False,
-            'mailboxes': 0      # Test Ashley
-        });
-        accountData = {
-            'email': email,
-            'first_name': firstName
-        }
-        account = context_io.post_account(**accountData)
-        dataStore.updateUser(user['_id'], **{'context_id': account.id})
-        session["context_id"] = account.id
-    session["provider_name"] = 'local'
-    session["email"] = user['_id']
-    session['firstname'] = user['firstname'];
-    return user['_id'];
+            return json.dumps({ 'success': False, 'error': "User not found, firstname is required to create an account" });
+        session["provider_name"] = 'local'
+        session["email"] = user['_id']
+        session['firstname'] = user['firstname'];
+        return json.dumps({ 'success': True, 'user': user['_id'] });
+    except Exception as e:
+        return json.dumps({ 'success': False, 'error': str(e) });
 
 @app.route('/mailboxcallback', methods=["GET"])
 def mailboxCallback():
-    print request.args.get('contextio_token')
+    print json.dumps(request.args)
+    source = context_io.get_connect_tokens(**{ 'token': request.args.get('contextio_token')});
+    user = dataStore.getUserByContextId(source['account']['id'])
+    dataStore.addUserSource(source['account']['id'], source['email'])
+    dataStore.updateUser(user['_id'], **{
+        'pending_sync': True
+    })
     return redirect(url_for('inbox'))
 
 @app.route('/add-mailbox', methods=["POST"])
@@ -695,11 +705,11 @@ def removeAccount():
     except:
         logger.error('App encountered an issue with account: {0} when trying to delete it.'.format(session["context_id"]))
         session.clear()
-        return render_template('userLogin.html',error=error)  
-      
-                        
-        
-                
+        return render_template('userLogin.html',error=error)
+
+
+
+
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)
