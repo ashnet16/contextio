@@ -78,18 +78,23 @@ function enable(label,status) {
             {%if source["status"] == "DISABLED"%}
               <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
               {%endif%}
-            
+
         </tr>
         {% endfor %}
-        
+
     </table>
 </div>
 <div>
     <p id = "add">Enter the email address for the mailbox you would like to add:</p>
-    <div>
-        <label>Email:</label><br/>
-        <input id="email" type="email" />
+    <div class="col-md-4">
+      <div class="form-group">
+        <label>Email:</label>
+        <input id="email" type="email" class="form-control" />
+      </div>
+      <div class="btn-toolbar">
+      <button id="addSource" type="button" class="btn btn-primary">Add</button>
+      </div>
     </div>
-    <button id="addSource" type="button">Add</button>
+
 </div>
 {% endblock body %}
