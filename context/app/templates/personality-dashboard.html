@@ -295,16 +295,9 @@ function buildPersonalityChart(contactData, update) {
 
       // update data
       updateData(i,data,false)
-      populatePersonalityTable(data, i)
     })
 }
 
-function populatePersonalityTable(data, i) {
-  data[i].data.forEach(function(d,i) {
-    console.log(i)
-    $("#"+i).append("<tr id="+i+"><td>"+d.name+"</td></tr>")
-    })
-}
 </script>
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
@@ -328,17 +321,6 @@ function populatePersonalityTable(data, i) {
   </div>
   <div class="row">
     <div class="col-md-6">
-      <!-- Big 5 for user goes here -->
-      <!-- <p>[[dashboard.userPersonality]]</p> -->
-        <table class="table">
-    <tr>
-    <th>&nbsp;</th><th>User</th><th>Contact</th>
-    </tr>
-    <tr id=0></tr>
-
-
-        </table>
-
     </div>
     <div class="col-md-6">
       <!-- Big 5 for selected contact goes here -->
