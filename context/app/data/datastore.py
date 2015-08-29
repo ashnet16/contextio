@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from pymongo.collection import ReturnDocument 
-from helpers.parser import Parser
+from ..helpers.parser import Parser
 import json
 
 MONGODB_HOST = 'localhost'
@@ -37,6 +37,11 @@ class DataStore:
     def updateUser(self, id, **user):
         users = self.db.users
         result = users.update_one({ '_id': id }, { '$set': user })
+        return result == 1
+
+    def saveUser(self, user):
+        users = self.db.users
+        result = users.update({ '_id': user['_id']}, user, True)
         return result == 1
 
     def addUserContact(self, id, **contact):
@@ -79,7 +84,7 @@ class DataStore:
 
     def savePersonalities(self, *personalities):
         personalityCollection = self.db.personality
-        result = messagesCollection.insert_many(personalities)
+        result = personalityCollection.insert_many(personalities)
         return len(result.inserted_ids) == len(personalities)
 
     def getFullBig5(self, email):
@@ -149,15 +154,20 @@ class DataStore:
         newContact = contactsCollection.update( {'_id': contactId}, {"$set": contact}, upsert = True)
         return newContact
 
+    def saveContact(self, contact):
+        contactsCollection = self.db.contacts
+        result = contactsCollection.update({ '_id': contact['_id']}, contact, True)
+        return result == 1
+
     def updateContactStatus(self, contactId, status):
         contactsCollection = self.db.contacts
         newContact = contactsCollection.find_one_and_update( {'_id': contactId}, {'$set': { 'is_selected': status }}, return_document=ReturnDocument.AFTER )
-        print 'find and update ', newContact
+        #print 'find and update ', newContact
         return newContact
 
     def getContactsByUser(self,  userEmail, selected=None):
         contactsCollection = self.db.contacts
-        print 'getContactsByUser ',  userEmail
+        #print 'getContactsByUser ',  userEmail
         if selected is None:
             # get all contacts
             return contactsCollection.find( {'user': userEmail} )

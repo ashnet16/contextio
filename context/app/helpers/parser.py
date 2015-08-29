@@ -2,8 +2,8 @@ import json
 import re
 import os
 
-from watson.personality import PersonalityInsightsService
-from watson.tone import ToneAnalyzerService
+from ..watson.personality import PersonalityInsightsService
+from ..watson.tone import ToneAnalyzerService
 from nouslog import log
 
 logger = log()
