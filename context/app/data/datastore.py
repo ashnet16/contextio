@@ -183,9 +183,8 @@ class DataStore:
             return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
 
     def hasContactsPopulated(self, userEmail):
-        contactsCollection = self.db.contactsCollection
+        contactsCollection = self.db.contacts
         return contactsCollection.find( {'user': userEmail}).count()
-
 
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships

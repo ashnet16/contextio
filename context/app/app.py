@@ -70,8 +70,8 @@ def runAnalysis(userEmail):
             # we need to get user<->contact messages first
             logger.info("getting email from %s ", contactEmail)
 
-            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=20, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contactEmail, limit=20, include_body=1, body_type="text/plain")
+            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=30, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contactEmail, limit=30, include_body=1, body_type="text/plain")
         except:
             errMsg = "Error Retrieving Contacts"
             session.clear()
@@ -118,6 +118,37 @@ def runAnalysis(userEmail):
 
     dataStore.updateUser(userEmail, **{ 'pending_contacts': False, 'pending_analysis': False })
     print '*********Completed initial analysis********'
+    return
+
+def getNext50Contact(account, user, skip):
+    contacts = account.get_contacts(**{'limit': 50, 'offset': skip})
+    contactNames = []
+    for contact in contacts:
+        contact.get()
+        contactDB = {'name': contact.name,
+                    'emails': contact.emails,
+                    'email': contact.emails[0],
+                    'user': user['_id'],
+                    'is_selected': False,
+                    'thumbnail':contact.name,
+                    'last_received':contact.last_received,
+                    'last_sent':contact.last_sent,
+                    'count':contact.count
+                    }
+        contactNames.append(contact.emails[0])
+        contactId = user['_id'] + '_' + contact.emails[0]
+        print 'contactId %s ', contactId
+        dataStore.addContact(contactId, **contactDB )
+    if(len(contacts) > 0):
+        getNext50Contact(account, user, skip+50)
+    else:
+        return;
+
+def importAllContacts(user):
+    dataStore.updateUser(user['_id'], **{ 'importing_contacts': True })
+    userAccount = c.Account(context_io, { 'id': user["context_id"] })
+    getNext50Contact(userAccount, user, 0)
+    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
     return
 
 @app.route('/')
@@ -233,9 +264,8 @@ def inbox():
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
         if(isOkay):
-            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
-            user['pending_contacts'] = True
-            user['pending_sync'] = False
+            p = multiprocessing.Process(target=importAllContacts, args=(user,))
+            p.start()
     # End of localhost hack
 
     #try:
@@ -330,7 +360,8 @@ def newMailFailureCallback():
 def mailboxSyncCallback():
     accountId = request.json['account_id']
     user = dataStore.getUserByContextId(accountId)
-    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
+    p = multiprocessing.Process(target=importAllContacts, args=(user,))
+    p.start()
     return 'OK'
 
 # sends user info to be our contextio account so that we can later on see their email
@@ -560,8 +591,9 @@ def getUserContacts():
     result = {}
     contactNames = []
     user = dataStore.getUser(session['email'])
-
+    print session['email']
     if dataStore.hasContactsPopulated(session['email']) > 0:
+        print 'got here'
         result = getUserContactsDB()
     else:
         userAccount = c.Account(context_io, { 'id': user["context_id"] })
@@ -587,7 +619,6 @@ def getUserContacts():
             'contacts': contacts,
             'selectedContacts': []
         }
-        session['contacts'] = contactNames
     return json.dumps(result, default=lambda o: o.__dict__)
 
 @app.route('/get-contacts-db', methods=["GET"])
@@ -607,8 +638,7 @@ def getUserContactsDB():
         'contacts': allContacts,
         'selectedContacts': selectedContacts
     }
-    session['email'] = contactNames
-    return json.dumps(result)
+    return result
 
 
 @app.route('/get-selected-contacts', methods=["GET"])
@@ -622,6 +652,8 @@ def getSelectedContacts():
 
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
+    if(not session['email']):
+        return json.dumps({'redirect':True})
     user = dataStore.getUser(session['email'])
     # The following is a hack to get around limitation with callbacks to localhost
     if(user['pending_sync']): #and 'localhost' in url_for('inbox', _external=True)):
@@ -637,10 +669,9 @@ def checkStatus():
                 for sync in sources[source]:
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
-        if(isOkay):
-            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
-            user['pending_contacts'] = True
-            user['pending_sync'] = False
+        if(isOkay and (not 'importing_contacts' in user or user['importing_contacts'] == False)):
+            p = multiprocessing.Process(target=importAllContacts, args=(user,))
+            p.start()
     # End of localhost hack
     return json.dumps({
         'pending_sync': user['pending_sync'],
@@ -713,7 +744,7 @@ def enable():
         account = c.Account(context_io, { 'id': session["context_id"]})
         source = c.Source(account, { 'label': label , 'status' : 1 })
         logger.info(source)
-        return json.dumps(source)
+        return json.dumps(source, default=lambda o: o.__dict__)
 
 @app.route('/delete', methods=['POST', 'GET'])
 def removeAccount():
@@ -818,6 +849,7 @@ def enronGetTone():
         # print userTone
     return json.dumps(userTone)
 
+
 @app.route('/enron-tone-dashboard', methods=["GET"])
 def enronShowToneDashboard():
     return render_template('enron-tone-dashboard.html')
@@ -828,6 +860,7 @@ def enronLogout():
     return redirect(url_for('enron-demo'))
 
 ####### END ENRON (NB sshould be in separate file/class ##########    
+
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)
