@@ -2,6 +2,9 @@ angular.module('loginApp', []).config(function($interpolateProvider){
   $interpolateProvider.startSymbol('[[').endSymbol(']]');
 }).controller('LoginController', ['$http', function($http) {
   var login = this;
+  login.doGoogleLogin = function() {
+    window.location = '/login/google'
+  }
   login.doLogin = function() {
     if(!login.email || !login.password) {
       login.error = "Email and password are required."
