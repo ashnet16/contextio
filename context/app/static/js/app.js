@@ -1,6 +1,9 @@
 angular.module('nousApp', []).config(function($interpolateProvider){
   $interpolateProvider.startSymbol('[[').endSymbol(']]');
-}).factory('StatusChecker', function($http,$q){
+}).controller('MenuController', [function() {
+  var menu = this
+  menu.route = window.location.pathname;
+}]).factory('StatusChecker', function($http,$q){
  return {
       poll : function(api){
           var deferred = $q.defer();
