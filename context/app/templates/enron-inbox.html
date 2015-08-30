@@ -1,0 +1,14 @@
+{% extends "enron-base.html" %}
+{% block body %}
+
+<div class="row" ng-controller='InboxController as app'>
+  <div class="col-md-12">
+    <div class="row">
+      <table id="mail" class="col-lg-11 table" ng-show="app.showInbox">
+        <tr ng-repeat="message in app.inbox.messages">
+          <td class="col-sm-2">[[ app.contactName(message)]]</td>
+          <td>[[ message.subject ]]</td></tr>
+        </table>
+      </div>
+    
+{% endblock body %}

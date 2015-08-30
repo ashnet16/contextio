@@ -1,0 +1,51 @@
+{% extends "enron-base.html" %}
+{% block body %}
+
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+<h1>Enron Contacts</h1>
+
+<script type="text/javascript">
+
+  $(document).ready(function(){
+    $(document).on("click", "#isSelect", function(e) {
+      var email = $('input:radio[name=enronName]:checked').val()
+      var userInfo = {
+      "email":email
+      };
+      $.ajax({
+       url: '/enron-inbox/' + email,
+       type: 'POST',
+       error: function(error) {
+         console.log(error);
+       }
+     });
+    
+      
+    });
+  
+    
+  });
+</script>
+</head><body>
+
+<input type="radio" name="enronName" value="kenneth.lay@enron.com">Kenneth Lay</input><br><br>
+<input type="radio" name="enronName" value="jeff.skilling@enron.com">Jeff Skilling</input><br><br>
+<input type="radio" name="enronName" value="jeffrey.shankman@enron.com">Jeffrey Shankman</input>
+
+<br/>
+<br/>
+<br/>
+
+<input type='button' value='Click to Select - Then check updated Inbox, Personality and Tone Dashboards' id='isSelect'>
+
+</body>
+</html>
+{% endblock body %}

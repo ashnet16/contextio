@@ -686,6 +686,8 @@ def showPersonalityDashboard():
     mailboxcount = dataStore.getmailboxcount(session["context_id"])
     return render_template('personality-dashboard.html', mailboxcount = mailboxcount)
 
+
+
 @app.route('/tone-dashboard', methods=["GET"])
 def showToneDashboard():
     mailboxcount = dataStore.getmailboxcount(session["context_id"])
@@ -730,9 +732,102 @@ def removeAccount():
         session.clear()
         return render_template('userLogin.html',error=error)
 
+#####################################################################
+# START Enron Specific Functions NB should be in separate file/class
+######################################################################
 
+@app.route('/enron-demo', methods=["POST", "GET"])
+def enronDemo():
+    return render_template('enron-demo.html')
 
+@app.route('/enron-inbox/<email>', methods=['POST'])
+def enronInbox1(email):
+    session['enronEmail'] = email
+    return 'OK'
+    
+    #return json.dumps(result, default=lambda o: o.__dict__)
 
+@app.route('/enron-inbox', methods=['GET'])
+def enronInbox():
+    if request.method == 'GET':
+        email = session['enronEmail']
+        user = dataStore.getUser(email)
+        contacts = dataStore.getContactsByUser(email, True)
+        messages = []
+        latestDate = 0
+        uMessages = dataStore.getMessagesFromUser(email)
+        messages = uMessages[email]
+        for contact in contacts:
+            contactEmail = contact['email']
+            cMessages = dataStore.getMessagesFromUser(contactEmail)
+            messages = messages + cMessages[contactEmail]
+        result = {
+        'msgCount': len(messages),
+        'messages': messages
+        }
+    return render_template('enron-inbox.html')
+
+@app.route('/enron-get-inbox', methods=["GET"])
+def enronGetInbox():
+    email = session['enronEmail']
+    user = dataStore.getUser(email)
+    contacts = dataStore.getContactsByUser(email, True)
+    messages = []
+    latestDate = 0
+    uMessages = dataStore.getMessagesFromUser(email)
+    messages = uMessages[email]
+    for contact in contacts:
+        contactEmail = contact['email']
+        cMessages = dataStore.getMessagesFromUser(contactEmail)
+        messages = messages + cMessages[contactEmail]
+    result = {
+        'msgCount': len(messages),
+        'messages': messages
+    }
+    return json.dumps(result, default=lambda o: o.__dict__)
+
+@app.route('/enron-personality-dashboard', methods=["GET"]) 
+def showPersonalityDashboardEnron():
+    return render_template('enron-personality-dashboard.html')
+
+@app.route('/enron-get-fullBig5', methods=['POST'])
+def enronGetFullBig5():
+    user = dataStore.getUser(session['enronEmail'])
+    email = request.json['email']
+    print 'email for full big 5', email
+    return json.dumps({ 'name': 'Big 5', 'children': dataStore.getFullBig5(email) })
+     
+
+@app.route('/enron-get-selected-contacts', methods=["GET"])
+def enronGetSelectedContacts():
+    selectedContacts = []
+    contacts = dataStore.getContactsByUser(session['enronEmail'], True)
+    for contact in contacts:
+        if contact['is_selected'] == True:
+            selectedContacts.append(contact)
+    return json.dumps(selectedContacts)
+
+@app.route('/enron-get-tone', methods=["GET", "POST"])
+def enronGetTone():
+    if('to' in request.json):
+        to = request.json['to']
+        userTone = dataStore.getContactToneBySenderAndReceiver(session['enronEmail'], to)
+        # print userTone
+    else:
+        userTone = dataStore.getContactToneBySender(session['enronEmail'])
+        # print userTone
+    return json.dumps(userTone)
+
+@app.route('/enron-tone-dashboard', methods=["GET"])
+def enronShowToneDashboard():
+    return render_template('enron-tone-dashboard.html')
+
+@app.route('/enron-logout', methods=["GET"])
+def enronLogout():
+    session.clear();
+    return redirect(url_for('enron-demo'))
+
+####### END ENRON (NB sshould be in separate file/class ##########    
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1',port=5000,debug=True)

@@ -116,12 +116,16 @@ class DataStore:
         messagesCollection = self.db.messages
         messages = messagesCollection.find({'from':email})
         result = []
+        
         for message in messages:
+            msgOwner = ''
+            if 'owner' in message:
+                msgOwner = message['owner']
             msg = {
                 "from": message['from'],
                 "datetime": message['datetime'],
                 "to": message['to'],
-                "owner": message['owner'],
+                "owner": msgOwner,
                 "_id": message['_id'],
                 "subject": message['subject'],
                 "tone": {}
@@ -136,12 +140,16 @@ class DataStore:
         messagesCollection = self.db.messages
         messages = messagesCollection.find({'from':sender, 'to': receiver})
         result = []
+
         for message in messages:
+            msgOwner = ''
+            if 'owner' in message:
+                msgOwner = message['owner']
             msg = {
                 "from": message['from'],
                 "datetime": message['datetime'],
                 "to": message['to'],
-                "owner": message['owner'],
+                "owner": msgOwner,
                 "_id": message['_id'],
                 "subject": message['subject'],
                 "tone": {}

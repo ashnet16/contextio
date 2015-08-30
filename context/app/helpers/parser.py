@@ -71,6 +71,8 @@ class Parser:
     def parseFullBig5(self, personalityData):
         fullBig5 = []
         personality = personalityData['personality']
+        if 'tree' not in personality:
+            return fullBig5
         level1 = personality['tree']
         level2 = level1['children']
         level3 = level2[0]['children']
