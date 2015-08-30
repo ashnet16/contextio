@@ -61,7 +61,7 @@
 						<p class="text-danger" ng-show="login.error">[[ login.error ]]</p>
 		        <form action="" id="loginForm" ng-disabled="login.processing">
 							<div class="form-group">
-								<button id="googleLogin" type="button" class="btn btn-danger btn-block">Login with Google</button>
+								<button id="googleLogin" type="button" class="btn btn-danger btn-block" ng-click="login.doGoogleLogin()">Login with Google</button>
 							</div>
 							<div class="form-group input-group">
 		            <span class="input-group-addon"><i class="glyphicon glyphicon-star"></i></span>
