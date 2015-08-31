@@ -60,15 +60,19 @@
   font-size: 12pt;
   font-weight: bold;
 }
+
+.legend-label {
+  text-transform:capitalize;
+}
 </style>
 <script>
 
  function buildPersonalityChart(contactData, update) {
  
+  currentUser = "{{ session['firstname'] }}"
 
   // contains both the user and contact data - set in the angular controller
   var userData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.userPersonality
-  console.log(userData)
   // initialize array where data for chart will be kept
   var data = []
 
@@ -80,7 +84,7 @@
     d.children.forEach(function(dd) {
       childeObj = {}
       childeObj.name = dd.name;
-      childeObj.user = dd.percentage
+      childeObj[currentUser] = dd.percentage
       obj.data.push(childeObj)
       })
     data.push(obj)
@@ -89,12 +93,12 @@
   // merge the contact data with the user data 
   contactData.forEach(function(d,i) {
     d.data.forEach(function(dd,ii) {
-      data[i].data[ii].contact = dd
+      data[i].data[ii][d.name] = dd
     })
       
   })
 
-    var margin = {top: 30, right: 20, bottom: 150, left: 40},
+    var margin = {top: 50, right: 20, bottom: 150, left: 40},
         width = $(".col-md-8").width() - margin.right - margin.left
         height = 300 
 
@@ -115,6 +119,7 @@
 
     var xAxis = d3.svg.axis()
         .scale(x0)
+        .tickSize(0)        
         .orient("bottom");
 
     var yAxis = d3.svg.axis()
@@ -122,11 +127,6 @@
         .orient("left")
         .ticks(10, "%");
 
-    var svg = d3.select(".chart").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // check to see if the user has chosen a big 5 category to view
     if (update == true) {
@@ -137,6 +137,12 @@
       // update the data
       updateData(index, data, update)
     } else{
+
+  var svg = d3.select(".chart").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   // used to create a new object that will allow us to create the grouped bar chart
   var userValues = d3.keys(data[index].data[0]).filter(function(key) { return key !== "name"  });
@@ -197,6 +203,7 @@
   // create the tiny square to indicate which color belongs to the user and contact
   legend.append("rect")
       .attr("x", width - 18)
+      .attr("y", -24)
       .attr("width", 18)
       .attr("height", 18)
       .style("fill", color);
@@ -204,8 +211,9 @@
   // add the labels to the legend
   legend.append("text")
       .attr("x", width - 24)
-      .attr("y", 9)
+      .attr("y", -14)
       .attr("dy", ".35em")
+      .attr("class","legend-label")
       .style("text-anchor", "end")
       .text(function(d) { return d; });
   }
@@ -227,7 +235,7 @@
   // a traditional way (i'll add more about this later - it's tricky until you grasp what's going on behind the scenes)
   updatedData=[]
 
-  var userValues = d3.keys(data[i].data[1]).filter(function(key) { return key !== "name" && key !== "values" });
+  var userValues = d3.keys(data[i].data[0]).filter(function(key) { return key !== "name" && key !== "values" });
 
 
     data[i].data.forEach(function(d) {
@@ -240,10 +248,10 @@
       });
     });
 
+
     x0.domain(data[i].data.map(function(d) { return d.name; }));
     x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
     y.domain([0, 1])
-    // y.domain([0, d3.max(data[i].data, function(d) { return d3.max(d.values, function(d) { return d.value; }); })])
 
     svg.select('.x.axis')
       .call(xAxis);
@@ -286,24 +294,25 @@
       .remove();
 
   // update the legend
-  var legend = svg.selectAll(".legend")
+  var legend = svg.selectAll(".legend-label")
       .data(userValues.slice().reverse())
-    .enter().append("g")
-      .attr("class", "legend")
-      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+    
+    legend.enter()
 
-  legend.append("rect")
-      .attr("x", width - 18)
-      .attr("width", 18)
-      .attr("height", 18)
-      .style("fill", color);
-
-  legend.append("text")
-      .attr("x", width - 24)
-      .attr("y", 9)
+    legend.selectAll("text").append("text")
+      
+    legend.transition().duration(300).attr("x", width - 24)
+      .attr("y", -14)
       .attr("dy", ".35em")
       .style("text-anchor", "end")
       .text(function(d) { return d; });
+
+    legend.exit()
+        .transition()
+        .duration(200)
+        .ease("quad")
+        .attr("width", 0)
+        .remove();
   }   
 
 
@@ -327,21 +336,30 @@
       // update title
       $(".breakdown-title").text('Breaking it down: ' + category)
 
+      // set our variables for the descriptions
       var intro = descriptions[category.toLowerCase()].intro
       var high = descriptions[category.toLowerCase()].high
       var low = descriptions[category.toLowerCase()].low
 
+      
+      // change the text of the desctiption
       $("#big-5-description-intro").text(intro)
       $("#big-5-description-high").text(high)
       $("#big-5-description-low").text(low)
 
+      // change the header of the description
       $(".description-header").text(category)
 
       // update data
       updateData(i,data,false)
     })
 
+      // initialize our description object that carries all of the data about each of
+      // the big 5 categories
       var descriptions = {}
+
+      // all of the information for each of the big 5 categories was taken from 
+      // https://en.wikipedia.org/wiki/Big_Five_personality_traits
       descriptions.openness = {}
       descriptions.openness.intro = "Openness reflects a general appreciation for emotion, imagination, and adventure."
       descriptions.openness.high = "Open to experience are intellectually curious, open to emotion, sensitive to beauty and willing to try new things."
@@ -418,6 +436,7 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
   <hr />
 
 <div class="row">
+    </div>
   <div class="col-md-8">
 <div class="chart">
   </div>

@@ -52,13 +52,13 @@ angular.module('enronApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
 
- // initialize array for contact data used in grouped bar chart
+        // initialize array for contact data used in grouped bar chart
         contactData= []
-        
         
       // get the values of the data needed for the contact user
       dashboard.contactPersonality.children.forEach(function(d) {
         obj = {}
+        obj.name = dashboard.selectedContact.name
         obj.cat = d.name
         obj.value = d.percentage
         obj.data = []
@@ -71,9 +71,7 @@ angular.module('enronApp', []).config(function($interpolateProvider){
 
       // the update value is assigned in the template
       if (update == true) {
-        console.log(contactData)
           // updates the contact personality chart with the new contact's data
-          // buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
           buildPersonalityChart(contactData, update)
     } else {
           buildPersonalityChart(contactData, false)
@@ -96,13 +94,12 @@ angular.module('enronApp', []).config(function($interpolateProvider){
 
   $http.post('/enron-get-fullBig5', userEmail).
     then(function(response) {
+      console.log(response)
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
-      // build the user personality chart
 
       // set the value of the user personality 
-      dashboard.mergedViewData[0] = dashboard.userPersonality
-      
+      dashboard.mergedViewData[0] = dashboard.userPersonality   
 
       // buildPersonalityChart(dashboard.userPersonality, "user-chart")
 

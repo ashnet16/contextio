@@ -32,4 +32,6 @@ body {
 }
 
  
-
+.navbar-brand {
+  color: #FEA600!important;
+}
