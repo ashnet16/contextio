@@ -182,7 +182,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
           // buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
           buildPersonalityChart(contactData, update)
     } else {
-          buildPersonalityChart(contactData)
+          buildPersonalityChart(contactData, false)
         
 
       // buildPersonalityChart(dashboard.contactPersonality, "contact-chart")

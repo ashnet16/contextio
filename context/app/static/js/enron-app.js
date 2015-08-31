@@ -34,6 +34,13 @@ angular.module('enronApp', []).config(function($interpolateProvider){
 }]).controller('PersonalityController', ['$http', function($http) {
   var dashboard = this;
 
+  // initialize a merged data object containing both datasets - used in the grouped bar chart
+  dashboard.mergedViewData = [
+     dashboard.userPersonality,
+     dashboard.contactPersonality
+   ]
+
+
   dashboard.getContactPersonality = function(update) {
 
     // initialize the default value of update to false
@@ -45,12 +52,41 @@ angular.module('enronApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
 
+ // initialize array for contact data used in grouped bar chart
+        contactData= []
+        
+        
+      // get the values of the data needed for the contact user
+      dashboard.contactPersonality.children.forEach(function(d) {
+        obj = {}
+        obj.cat = d.name
+        obj.value = d.percentage
+        obj.data = []
+        d.children.forEach(function(dd){
+          obj.data.push(dd.percentage)
+        })
+        contactData.push(obj)
+      })
+
+
       // the update value is assigned in the template
       if (update == true) {
+        console.log(contactData)
           // updates the contact personality chart with the new contact's data
-          buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
+          // buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
+          buildPersonalityChart(contactData, update)
     } else {
-      buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
+          buildPersonalityChart(contactData, false)
+        
+
+
+
+    //   // the update value is assigned in the template
+    //   if (update == true) {
+    //       // updates the contact personality chart with the new contact's data
+    //       buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
+    // } else {
+    //   buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
     }
       }, function(response) {
         // called asynchronously if an error occurs
@@ -63,7 +99,12 @@ angular.module('enronApp', []).config(function($interpolateProvider){
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
       // build the user personality chart
-      buildPersonalityChart(dashboard.userPersonality, "user-chart")
+
+      // set the value of the user personality 
+      dashboard.mergedViewData[0] = dashboard.userPersonality
+      
+
+      // buildPersonalityChart(dashboard.userPersonality, "user-chart")
 
     }, function(response) {
       // called asynchronously if an error occurs
