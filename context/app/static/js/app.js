@@ -166,6 +166,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
       dashboard.contactPersonality.children.forEach(function(d) {
         obj = {}
         obj.cat = d.name
+        obj.name = dashboard.selectedContact.name
         obj.value = d.percentage
         obj.data = []
         d.children.forEach(function(dd){
