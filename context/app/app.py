@@ -755,7 +755,7 @@ def removeAccount():
         del_acct = account.delete()
         logger.info('{0} account has been deleted from contextio'.format(session["context_id"]))
         session.clear()
-        return render_template('userLogin.html',error=removed)
+        return render_template('userLogin.html',removed=removed)
     except:
         logger.error('App encountered an issue with account: {0} when trying to delete it.'.format(session["context_id"]))
         session.clear()

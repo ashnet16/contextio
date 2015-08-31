@@ -46,10 +46,27 @@
 			}
 
 			.white-text { color: white; }
+            
+            
+            .removed { /* Redundant will update in next release */
+                position : absolute;
+                background-color: #90EE90;
+                width: 100%;
+                font-style: normal;
+                font-family: "Times New Roman", Times, serif;
+                text-align: center;
+            }
+
 		</style>
 	</head>
 
 	<body ng-app="loginApp">
+        
+        {% if error %}
+        <b> <p class="error">{{ error }}</p></b>
+        {% else %}
+        <b> <p class="removed">{{ removed }}</p></b>
+        {% endif %}
 
 		<div class="container" ng-controller="LoginController as login">
 		  <div class="row">
