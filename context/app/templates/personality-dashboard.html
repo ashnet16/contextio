@@ -277,6 +277,7 @@ function buildPersonalityChart(contactData, update) {
 
     $('.list-group-item').click(function(e){
       
+      e.preventDefault();
 
       // each of the Big 5 id elements corresponds to it's index within the data
       i = $(this)[0].id
