@@ -63,6 +63,11 @@ function enable(label,force_status_check) {
 };
 </script>
 <h2> List of mailboxes </h2>
+{% if session['is_demo'] %}
+<h2>Demo Account for {{ session['email'] }}</h2>
+<p>This is a demo account as such you cannot manage associated mailboxes</p>
+<p>You can check out the personality and tone dashboards though</p>
+{% else %}
 <div>
     <table>
         <tr>
@@ -78,7 +83,7 @@ function enable(label,force_status_check) {
             {%if source["status"] == "DISABLED"%}
               <td><a href="javascript: enable('{{source["label"]}},{{source["force_status_check"]}}')">Enable Account</button></td>
             {%endif%}
-            
+
         </tr>
         {% endfor %}
 
@@ -97,4 +102,5 @@ function enable(label,force_status_check) {
     </div>
 
 </div>
+{% endif %}
 {% endblock body %}

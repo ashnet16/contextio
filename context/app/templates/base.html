@@ -56,7 +56,11 @@
                     <ul class="nav navbar-nav navbar-right">
                         <li><a>Hi {{ session['firstname'] }}</a></li>
                         <li><a href="/logout">Logout</a></li>
+                        {% if session['is_demo'] %}
+                        <li class="disabled"><a class="disabled">Delete Account</a></li>
+                        {% else %}
                         <li><a href="/delete">Delete Account</a></li>
+                        {% endif %}
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
