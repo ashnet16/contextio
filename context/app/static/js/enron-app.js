@@ -30,7 +30,21 @@ angular.module('enronApp', []).config(function($interpolateProvider){
         // or server returns response with an error status.
       });
   }
-
+$http.get('/check-status').
+    then(function(response) {
+      // this callback will be called asynchronously
+      console.log(response)
+      app.status = response.data;
+      if(app.status.pending_contacts) {
+        app.getContacts();
+      } else if(!app.status.pending_sync && !app.status.pending_analysis) {
+        app.showInbox = true;
+        app.loadInbox();
+      }
+    }, function(response) {
+      // called asynchronously if an error occurs
+      // or server returns response with an error status.
+    });
 }]).controller('PersonalityController', ['$http', function($http) {
   var dashboard = this;
 

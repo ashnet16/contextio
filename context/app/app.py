@@ -747,11 +747,12 @@ def enronInbox1(email):
     
     #return json.dumps(result, default=lambda o: o.__dict__)
 
-@app.route('/enron-inbox', methods=['GET'])
+@app.route('/enron-inbox', methods=['GET','POST'])
 def enronInbox():
     if request.method == 'GET':
         email = session['enronEmail']
         user = dataStore.getUser(email)
+        print user
         contacts = dataStore.getContactsByUser(email, True)
         messages = []
         latestDate = 0
