@@ -30,7 +30,7 @@ angular.module('enronApp', []).config(function($interpolateProvider){
         // or server returns response with an error status.
       });
   }
-$http.get('/check-status').
+$http.get('/enron-check-status').
     then(function(response) {
       // this callback will be called asynchronously
       console.log(response)

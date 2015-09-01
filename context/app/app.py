@@ -860,28 +860,11 @@ def enronLogout():
     return redirect(url_for('enron-demo'))
 
 @app.route('/enron-check-status', methods=["GET"])
-def checkStatus():
+def enronCheckStatus():
     if(not session['enronEmail']):
         return json.dumps({'redirect':True})
     user = dataStore.getUser(session['enronEmail'])
     # The following is a hack to get around limitation with callbacks to localhost
-    if(user['pending_sync']): #and 'localhost' in url_for('inbox', _external=True)):
-        params = {
-            'id': user["context_id"]
-        }
-        account = c.Account(context_io, params)
-        sources = account.get_sync()
-        isOkay = False
-        # The format of the response is awful so the following is as good as I could get
-        for source in sources:
-            if(sources[source] != None):
-                for sync in sources[source]:
-                    if(sources[source][sync]['initial_import_finished'] == True):
-                        isOkay = True
-        if(isOkay and (not 'importing_contacts' in user or user['importing_contacts'] == False)):
-            p = multiprocessing.Process(target=importAllContacts, args=(user,))
-            p.start()
-    # End of localhost hack
     return json.dumps({
         'pending_sync': user['pending_sync'],
         'pending_contacts': user['pending_contacts'],
