@@ -19,13 +19,6 @@ body {
 	padding-top: 20px;
 	padding-bottom: 20px;
 }
-
-.navbar-inverse .navbar-brand {
-    font-family: "Poiret One","Helvetica Neue",Helvetica,Arial,cursive;
-    font-size: 50px;
-    color: #fea600;
-}
-
 .navbar-nav>.active>a {
 	opacity:.6;
 }
@@ -36,4 +29,9 @@ body {
 
 #add {
     margin-top: 20px;
+}
+
+ 
+.navbar-brand {
+  color: #FEA600!important;
 }
