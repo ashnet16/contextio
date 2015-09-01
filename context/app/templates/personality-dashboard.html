@@ -1,8 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-{%if mailboxcount == 0 %}
-    <p class="warning">Hey, looks like you don't have any mailboxes associated with this account. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
-{%else%}
 <style>
 .bar {
   fill: #0C090A;
@@ -60,25 +57,62 @@
   text-transform:capitalize;
 }
 
+.big-5-score {
+  text-transform:capitalize;
+}
+
+.big-5-score td {
+  text-align: center;
+}
+
+.big-5-score th {
+  text-align: center;
+}
+
+.panel-heading {
+  font-weight: bold;
+}
+
+
+td.selected {
+  font-weight: bold;
+  color: #FEA600;
+}
+
+.breaking-it-down {
+  font-weight: bold;
+}
+
+#breakdown-big5trait {
+  text-transform:capitalize!important;
+}
+
 </style>
 <script>
-
-
+function num2per(val) {
+  return String(Math.round(val * 100)) + "%"
+}
+ 
 function buildPersonalityChart(contactData, update) {
-
+ 
   // current user's first name
   var currentUser = "{{ session['firstname'] }}"
+  $("#user-name").text(currentUser)
 
   // contains both the user and contact data - set in the angular controller
   var userData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.userPersonality
   // initialize array where data for chart will be kept
   var data = []
 
+  var big5Traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'emotionalrange']
+
+
   // flatten and extract our user data to make it easier to work with
-   userData.children.forEach(function(d) {
+   userData.children.forEach(function(d,i) {
     obj = {};
     obj.cat = d.name
     obj.data = []
+    $("#user-" + big5Traits[i]+ "-score").text(num2per(d.percentage))
     d.children.forEach(function(dd) {
       childeObj = {}
       childeObj.name = dd.name;
@@ -88,19 +122,28 @@ function buildPersonalityChart(contactData, update) {
     data.push(obj)
   })
 
-  // merge the contact data with the user data
+
+
+
+  // merge the contact data with the user data 
   contactData.forEach(function(d,i) {
+    if (i === 0) {
+      var contactName = d.name
+      $("#contact-name").text(contactName)
+    }
+    $("#contact-" + big5Traits[i]+ "-score").text(num2per(d.value))
     d.data.forEach(function(dd,ii) {
       data[i].data[ii][d.name] = dd
     })
-
+      
   })
 
-
+  $("#currentUser").text(currentUser)
+  
     // set our margin attributes
-    var margin = {top: 50, right: 20, bottom: 150, left: 40},
+    var margin = {top: 50, right: 20, bottom: 50, left: 40},
         width = $(".col-md-8").width() - margin.right - margin.left
-        height = 300
+        height = 300 
 
     // each of the Big 5 id elements corresponds to it's index within the data
     var index = $('.list-group-item').closest(".selected")[0].id
@@ -119,7 +162,7 @@ function buildPersonalityChart(contactData, update) {
 
     var xAxis = d3.svg.axis()
         .scale(x0)
-        .tickSize(0)
+        .tickSize(0) 
         .orient("bottom");
 
     var yAxis = d3.svg.axis()
@@ -130,7 +173,7 @@ function buildPersonalityChart(contactData, update) {
 
     // check to see if the user has chosen a big 5 category to view
     if (update == true) {
-
+      
       // index allows us to know which element in the data array should be chosen
       index = $('.list-group-item').closest(".selected")[0].id
 
@@ -148,16 +191,16 @@ function buildPersonalityChart(contactData, update) {
 
   // used to create a new object that will allow us to create the grouped bar chart
   var userValues = d3.keys(data[index].data[0]).filter(function(key) { return key !== "name"  });
-
-  // create the new object that stores the data in a format that allows easy creation of the
+  
+  // create the new object that stores the data in a format that allows easy creation of the 
   // grouped bar chart
   data[index].data.forEach(function(d) {
-    d.values = userValues.map(function(name) {
-      return {name: name, value: +d[name]};
+    d.values = userValues.map(function(name) { 
+      return {name: name, value: +d[name]}; 
     });
   });
 
-
+  
   // scale our data
   x0.domain(data[index].data.map(function(d) { return d.name; }));
   x1.domain(userValues).rangeRoundBands([0, x0.rangeBand()]);
@@ -194,7 +237,7 @@ function buildPersonalityChart(contactData, update) {
       .attr("y", function(d) { return y(d.value); })
       .attr("height", function(d) { return  height - y(d.value); })
       .style("fill", function(d) { return color(d.name); });
-
+  
  // initialize the legend
   var legend = svg.selectAll(".legend")
       .data(userValues.slice().reverse())
@@ -219,7 +262,7 @@ function buildPersonalityChart(contactData, update) {
   }
 
   function updateData(i, dataset, update) {
-    /*
+    /* 
       function to update the data when the user selects a new big 5 cat or a new contact is chosen
       the dataset parameter is optional - its only required when a new contact is selected
       it is not needed to update the chart of the selected contact
@@ -231,7 +274,7 @@ function buildPersonalityChart(contactData, update) {
   // initialize our data array that will hold the updated data
   // this is needed for when a user selects a new contact
   // d3 updates data by looking for new key-value pairs in the data
-  // the way a grouped bar chart requires data makes it difficult to perform the update in
+  // the way a grouped bar chart requires data makes it difficult to perform the update in 
   // a traditional way (i'll add more about this later - it's tricky until you grasp what's going on behind the scenes)
   updatedData=[]
 
@@ -239,12 +282,12 @@ function buildPersonalityChart(contactData, update) {
 
 
     data[i].data.forEach(function(d) {
-      d.values = userValues.map(function(name) {
-
+      d.values = userValues.map(function(name) { 
+        
         // push the data needed for updating the contact
         updatedData.push({name: name, value: +d[name]})
 
-        return {name: name, value: +d[name]};
+        return {name: name, value: +d[name]}; 
       });
     });
 
@@ -265,7 +308,7 @@ function buildPersonalityChart(contactData, update) {
         .attr("y", 6)
         .attr("dy", ".51em")
 
-  // this is the key to updating data
+  // this is the key to updating data 
   var bar = svg.selectAll(".bar").data(updatedData)
 
     bar.enter()
@@ -278,10 +321,10 @@ function buildPersonalityChart(contactData, update) {
       .duration(300)
       .ease("quad")
       .attr("width", x1.rangeBand())
-      .attr("x", function(d) {
-        return x1(d.name);
+      .attr("x", function(d) { 
+        return x1(d.name); 
       })
-      .attr("y", function(d) {
+      .attr("y", function(d) { 
         return y(d.value); })
       .attr("height", function(d) { return  height - y(d.value); })
       .style("fill", function(d) { return color(d.name); });
@@ -297,10 +340,10 @@ function buildPersonalityChart(contactData, update) {
  // update the legend
   var legend = svg.selectAll(".legend-label")
       .data(userValues.slice().reverse())
-
+    
     legend.enter()
     legend.selectAll("text").append("text")
-
+      
     legend.transition().duration(300).attr("x", width - 24)
       .attr("y", -14)
       .attr("dy", ".35em")
@@ -312,11 +355,11 @@ function buildPersonalityChart(contactData, update) {
         .ease("quad")
         .attr("width", 0)
         .remove();
-  }
+  }   
 
 
     $('.list-group-item').click(function(e){
-
+      
       e.preventDefault();
 
       // each of the Big 5 id elements corresponds to it's index within the data
@@ -324,27 +367,39 @@ function buildPersonalityChart(contactData, update) {
 
       // indicate that the previous button is no longer selected
       $('.list-group-item').closest('.selected').removeClass('selected')
-
+      
       // indicate which button has been selected
       $(this).addClass("selected")
-
+      
       // capitalize category
       category = $(this)[0].textContent.toUpperCase()
 
       // update title
-      $(".breakdown-title").text('Breaking it down: ' + category)
+      $("#breakdown-big5trait").text(category)
 
       // set our variables for the descriptions
       var intro = descriptions[category.toLowerCase()].intro
       var high = descriptions[category.toLowerCase()].high
       var low = descriptions[category.toLowerCase()].low
-
+      
       // change the text of the desctiption
       $("#big-5-description-intro").text(intro)
       $("#big-5-description-high").text(high)
       $("#big-5-description-low").text(low)
+
       // change the header of the description
       $(".description-header").text(category)
+
+      // header on table beneath gropued bar chart
+      $(".panel-heading").text(category)
+
+      
+      // remove selected class so that the it's no longer bold
+      $("td").closest(".selected").removeClass("selected")
+
+      // add selected class to table beneath chart to make it bold
+      $("#user-" + big5Traits[i].toLowerCase() + "-score").addClass("selected")
+      $("#contact-" + big5Traits[i].toLowerCase() + "-score").addClass("selected")
 
       // update data
       updateData(i,data,false)
@@ -352,7 +407,7 @@ function buildPersonalityChart(contactData, update) {
       // initialize our description object that carries all of the data about each of
       // the big 5 categories
       var descriptions = {}
-      // all of the information for each of the big 5 categories was taken from
+      // all of the information for each of the big 5 categories was taken from 
       // https://en.wikipedia.org/wiki/Big_Five_personality_traits
       descriptions.openness = {}
       descriptions.openness.intro = "Openness reflects a general appreciation for emotion, imagination, and adventure."
@@ -382,12 +437,6 @@ function buildPersonalityChart(contactData, update) {
 }
 
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
-<script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-<script src="{{ url_for('static', filename='js/dc.js')}}"></script>
-<script src="{{ url_for('static', filename='js/queue.js')}}"></script>
-<script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
     <h2>Personality Dashboard</h2>
@@ -427,12 +476,12 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
 
   </div>
   <hr />
-
+<div class="col-md-6 breaking-it-down">
+  Breaking it down - <span id="breakdown-big5trait">OPENNESS</span>
+</div>
 <div class="row">
-    </div>
   <div class="col-md-8">
-<div class="chart">
-  </div>
+    <div class="chart"></div>
   </div>
   <div class="col-md-4">
         <div class="description-header">Openness</div>
@@ -442,15 +491,30 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
         <p class="big-5-description" id="big-5-description-high">Open to experience are intellectually curious, open to emotion, sensitive to beauty and willing to try new things.</p>
         <p class="score">Low Score</p>
         <p class="big-5-description" id="big-5-description-low">Tend to have more conventional, traditional interests; they are conservative and resistant to change.</p>
+      </div>
     </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-default big-5-score">
+        <table class="table">
+          <tr>
+            <th id="">&nbsp;</th><th id="openness-score">Openness</th><th id="conscientiousness-score">Conscientiousness</th><th id="extraversion-score">Extraversion</th><th id="agreeableness-score">Agreeableness</th><th id="emotionalrange-score">Emotional Range</th>
+          </tr>
+          <tr>
+            <td id="user-name"></td><td class="selected" id="user-openness-score"></td><td id="user-conscientiousness-score"></td><td id="user-extraversion-score"></td><td id="user-agreeableness-score"></td><td id="user-emotionalrange-score"></td>
+          </tr>
+          <tr>
+            <td id="contact-name"></td><td class="selected" id="contact-openness-score"></td><td id="contact-conscientiousness-score"></td><td id="contact-extraversion-score"></td><td id="contact-agreeableness-score"></td><td id="contact-emotionalrange-score"></td>
+          </tr>
+        </table>
     </div>
   </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
 <script src="{{ url_for('static', filename='js/queue.js')}}"></script>
 <script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
-</div>
-{%endif%}
 {% endblock body %}
