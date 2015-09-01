@@ -31,10 +31,10 @@ app.secret_key = 'nous session key'
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'nous'
-
 # contextio key and secret key
 CONSUMER_KEY = 'l57sr7jp'
 CONSUMER_SECRET = 'm0mRv5iaojsNWnvu'
+
 
 logger = log()
 
@@ -70,8 +70,8 @@ def runAnalysis(userEmail):
             # we need to get user<->contact messages first
             logger.info("getting email from %s ", contactEmail)
 
-            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=20, include_body=1, body_type="text/plain")
-            contactMsgs = account.get_messages(sender = contactEmail, limit=20, include_body=1, body_type="text/plain")
+            userMsgs = account.get_messages(sender = userEmail, to=contactEmail, limit=30, include_body=1, body_type="text/plain")
+            contactMsgs = account.get_messages(sender = contactEmail, limit=30, include_body=1, body_type="text/plain")
         except:
             errMsg = "Error Retrieving Contacts"
             session.clear()
@@ -118,6 +118,37 @@ def runAnalysis(userEmail):
 
     dataStore.updateUser(userEmail, **{ 'pending_contacts': False, 'pending_analysis': False })
     print '*********Completed initial analysis********'
+    return
+
+def getNext50Contact(account, user, skip):
+    contacts = account.get_contacts(**{'limit': 50, 'offset': skip})
+    contactNames = []
+    for contact in contacts:
+        contact.get()
+        contactDB = {'name': contact.name,
+                    'emails': contact.emails,
+                    'email': contact.emails[0],
+                    'user': user['_id'],
+                    'is_selected': False,
+                    'thumbnail':contact.name,
+                    'last_received':contact.last_received,
+                    'last_sent':contact.last_sent,
+                    'count':contact.count
+                    }
+        contactNames.append(contact.emails[0])
+        contactId = user['_id'] + '_' + contact.emails[0]
+        print 'contactId %s ', contactId
+        dataStore.addContact(contactId, **contactDB )
+    if(len(contacts) > 0):
+        getNext50Contact(account, user, skip+50)
+    else:
+        return;
+
+def importAllContacts(user):
+    dataStore.updateUser(user['_id'], **{ 'importing_contacts': True })
+    userAccount = c.Account(context_io, { 'id': user["context_id"] })
+    getNext50Contact(userAccount, user, 0)
+    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
     return
 
 @app.route('/')
@@ -167,6 +198,7 @@ def login(provider_name):
                 'pending_sync': True,
                 'pending_contacts': False,
                 'pending_analysis': False,
+                'mailboxes': 1
 
             })
 
@@ -175,7 +207,7 @@ def login(provider_name):
             session['provider_refresh_token'] = result.user.credentials.token
             session['provider_name'] = result.provider.name
             session['credentials'] = result.user.credentials.serialize()
-            #session['app_id'] = result.user.app_id;
+
             # check if the user already has a context_id
             if 'context_id' in user:
                 session["context_id"] = user['context_id']
@@ -200,6 +232,7 @@ def logout():
 
 @app.route('/inbox', methods=['GET'])
 def inbox():
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
     logger.info("Just checking" )
     if 'provider_name' in session:
         if session['provider_name'] != 'local':
@@ -231,9 +264,8 @@ def inbox():
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
         if(isOkay):
-            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
-            user['pending_contacts'] = True
-            user['pending_sync'] = False
+            p = multiprocessing.Process(target=importAllContacts, args=(user,))
+            p.start()
     # End of localhost hack
 
     #try:
@@ -254,7 +286,7 @@ def inbox():
         return render_template('inbox.html', user=user)
     else:
         # get analysis data from mongodb and display the inbox
-        return render_template('inbox.html',  user=user)
+        return render_template('inbox.html', contactList=user['contacts'], user=user, mailboxcount = mailboxcount)
 
 @app.route('/do-analysis', methods=['POST'])
 def doAnalysis2():
@@ -301,58 +333,95 @@ def createContextAccount(**args):
         provider_refresh_token=args['refresh_token'],
         provider_consumer_key=CONFIG['google']['consumer_key'],
         discoveryObject=discoveryObject)
-    #account.post_sync()
+    account.post_webhook(**{
+        "callback_url": url_for('newMailCallback', _external=True),
+        'failure_notif_url': url_for('newMailFailureCallback', _external=True)
+    })
     dataStore.updateUser(args['email'], **{'context_id': account.id})
     return account.id
+
+@app.route('/newmail-callback', methods=['POST'])
+def newMailCallback():
+    print request.json['message_data']['message_id']
+    user = dataStore.getUserByContextId(request.json['account_id'])
+    account = c.Account(context_io, {'id': request.json['account_id']})
+    msg = c.Message(account, { 'message_id': request.json['message_data']['message_id']})
+    msg.get(**{'include_body': 1, 'body_type': 'text/html'})
+    message = parser.processMessage(user['_id'], msg)
+    dataStore.saveMessage(**message)
+    return 'OK'
+
+@app.route('/newmail-failure-callback', methods=['POST'])
+def newMailFailureCallback():
+    print request.json
+    return 'OK'
 
 @app.route('/mailbox-sync-callback', methods=['POST'])
 def mailboxSyncCallback():
     accountId = request.json['account_id']
     user = dataStore.getUserByContextId(accountId)
-    dataStore.updateUser(user['_id'], **{ 'pending_contacts': True, 'pending_sync': False })
+    p = multiprocessing.Process(target=importAllContacts, args=(user,))
+    p.start()
     return 'OK'
 
 # sends user info to be our contextio account so that we can later on see their email
 @app.route('/sendUserInfo', methods=['POST'])
 def sendUserInfo():
-    firstName = request.json["firstName"]
-    email = request.json["email"]
-    password = request.json["password"]
-    # Check if the user exists
-    user = dataStore.getUser(email);
-    error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
-    if user != None:
-        # Compare password
-        if pbkdf2_sha256.verify(password, user["password"]) == True:
-            session["context_id"] = user["context_id"]
+    try:
+        firstName = request.json["firstName"]
+        email = request.json["email"]
+        password = request.json["password"]
+        # Check if the user exists
+        user = dataStore.getUser(email);
+        error = 'Invalid credentials: Your username and/or password is incorrect. Please try again.'
+        if user != None:
+            # Compare password
+            if pbkdf2_sha256.verify(password, user["password"]) == True:
+                session["context_id"] = user["context_id"]
+            else:
+                return json.dumps({ 'success': False, 'error': error });
+        elif firstName != '':
+            user = dataStore.createUser(**{
+                '_id': email,
+                'firstname': firstName,
+                'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
+                'contacts': [],
+                'pending_sync': False,
+                'pending_contacts': False,
+                'pending_analysis': False,
+                'mailboxes': 0      # Test Ashley
+            });
+            accountData = {
+                'email': email,
+                'first_name': firstName
+            }
+            account = context_io.post_account(**accountData)
+            account.post_webhook(**{
+                "callback_url": url_for('newMailCallback', _external=True),
+                'failure_notif_url': url_for('newMailFailureCallback', _external=True)
+            })
+            dataStore.updateUser(user['_id'], **{'context_id': account.id})
+            session["context_id"] = account.id
         else:
-            return render_template('userLogin.html',error=error) #may not be able to use this
-    else:
-        user = dataStore.createUser(**{
-            '_id': email,
-            'firstname': firstName,
-            'sources': [email],
-            'password': pbkdf2_sha256.encrypt(password, rounds=200000, salt_size=16),
-            'contacts': [],
-            'pending_sync': True,
-            'pending_contacts': False,
-            'pending_analysis': False,
-        });
-        accountData = {
-            'email': email,
-            'first_name': firstName
-        }
-        account = context_io.post_account(**accountData)
-        dataStore.updateUser(user['_id'], **{'context_id': account.id})
-        session["context_id"] = account.id
-    session["provider_name"] = 'local'
-    session["email"] = user['_id']
-    session['firstname'] = user['firstname'];
-    return user['_id'];
+            return json.dumps({ 'success': False, 'error': "User not found, firstname is required to create an account" });
+        session["provider_name"] = 'local'
+        session["email"] = user['_id']
+        session['firstname'] = user['firstname'];
+        if 'is_demo' in user:
+            session['is_demo'] = user['is_demo']
+        return json.dumps({ 'success': True, 'user': user['_id'] });
+    except Exception as e:
+        return json.dumps({ 'success': False, 'error': str(e) });
 
 @app.route('/mailboxcallback', methods=["GET"])
 def mailboxCallback():
-    print request.args.get('contextio_token')
+    print json.dumps(request.args)
+    source = context_io.get_connect_tokens(**{ 'token': request.args.get('contextio_token')});
+    user = dataStore.getUserByContextId(source['account']['id'])
+    dataStore.addUserSource(source['account']['id'], source['email'])
+    dataStore.updateUser(user['_id'], **{
+        'pending_sync': True
+    })
     return redirect(url_for('inbox'))
 
 @app.route('/add-mailbox', methods=["POST"])
@@ -363,10 +432,11 @@ def addMailbox():
         result = account.post_connect_token(**{
         "callback_url": url_for('mailboxCallback', _external=True),
         "email": email,
-        "first_name": session["firstname"],
-        #"app_id": session['app_id'] #Ashley testing
-
+        "first_name": session["firstname"]
         })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount + 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(result);
 
 @app.route('/remove-mailbox', methods=["POST"])
@@ -375,6 +445,9 @@ def removeMailbox():
         label = request.json["label"]
         account = c.Account(context_io, { 'id': session["context_id"] })
         source = c.Source(account, { 'label': label })
+        mailboxcount = dataStore.getmailboxcount(session["context_id"])
+        add = mailboxcount - 1
+        dataStore.updatemailbox(session["context_id"], add)
         return json.dumps(source .delete());
 
 @app.route('/mailboxes', methods=["GET"])
@@ -389,7 +462,14 @@ def mailboxes():
 @app.route('/showMoreContacts', methods=["GET"])
 def showMoreContacts():
     user = dataStore.getUser(session['email'])
-    return render_template('moreContacts.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    account = c.Account(context_io, { 'id': session["context_id"] })
+    numOfContacts = 30
+    contacts = account.get_contacts(limit=numOfContacts)
+    contactList = []
+    for contactObj in contacts:
+        contactList.append(contactObj.email)
+    return render_template('moreContacts.html', listOfContacts = contactList, mailboxcount = mailboxcount)
 
 @app.route('/selectContact', methods=["POST"])
 def selectContact():
@@ -513,8 +593,9 @@ def getUserContacts():
     result = {}
     contactNames = []
     user = dataStore.getUser(session['email'])
-
+    print session['email']
     if dataStore.hasContactsPopulated(session['email']) > 0:
+        print 'got here'
         result = getUserContactsDB()
     else:
         userAccount = c.Account(context_io, { 'id': user["context_id"] })
@@ -540,7 +621,6 @@ def getUserContacts():
             'contacts': contacts,
             'selectedContacts': []
         }
-        session['contacts'] = contactNames
     return json.dumps(result, default=lambda o: o.__dict__)
 
 @app.route('/get-contacts-db', methods=["GET"])
@@ -560,8 +640,7 @@ def getUserContactsDB():
         'contacts': allContacts,
         'selectedContacts': selectedContacts
     }
-    session['email'] = contactNames
-    return json.dumps(result)
+    return result
 
 
 @app.route('/get-selected-contacts', methods=["GET"])
@@ -575,9 +654,11 @@ def getSelectedContacts():
 
 @app.route('/check-status', methods=["GET"])
 def checkStatus():
+    if(not session['email']):
+        return json.dumps({'redirect':True})
     user = dataStore.getUser(session['email'])
     # The following is a hack to get around limitation with callbacks to localhost
-    if(user['pending_sync'] and 'localhost' in url_for('inbox', _external=True)):
+    if(user['pending_sync']): #and 'localhost' in url_for('inbox', _external=True)):
         params = {
             'id': user["context_id"]
         }
@@ -590,10 +671,9 @@ def checkStatus():
                 for sync in sources[source]:
                     if(sources[source][sync]['initial_import_finished'] == True):
                         isOkay = True
-        if(isOkay):
-            dataStore.updateUser(user['_id'], **{ 'pending_sync': False, 'pending_contacts': True, 'pending_analysis': False })
-            user['pending_contacts'] = True
-            user['pending_sync'] = False
+        if(isOkay and (not 'importing_contacts' in user or user['importing_contacts'] == False)):
+            p = multiprocessing.Process(target=importAllContacts, args=(user,))
+            p.start()
     # End of localhost hack
     return json.dumps({
         'pending_sync': user['pending_sync'],
@@ -610,7 +690,7 @@ def getTone():
     else:
         userTone = dataStore.getContactToneBySender(session['email'])
         # print userTone
-    return json.dumps(userTone)
+    return json.dumps(userTone, default=lambda o: o.__dict__)
 
 @app.route('/get-user-tone', methods=["GET", "POST"])
 def getUserTone():
@@ -634,13 +714,15 @@ def showMsgTone():
 def showTone():
     return render_template('tone.html')
 
-@app.route('/personality-dashboard', methods=["GET"])
+@app.route('/personality-dashboard', methods=["GET"]) #Ashley Test
 def showPersonalityDashboard():
-    return render_template('personality-dashboard.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    return render_template('personality-dashboard.html', mailboxcount = mailboxcount)
 
 @app.route('/tone-dashboard', methods=["GET"])
 def showToneDashboard():
-    return render_template('tone-dashboard.html')
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    return render_template('tone-dashboard.html', mailboxcount = mailboxcount)
 
 # Returns individual message.  Expects { messageId: messageId}
 #@app.route('/get-message', methods=['POST'])
@@ -655,15 +737,32 @@ def showToneDashboard():
 
     # Get messages from the mongodb where the from = email
 
-@app.route('/enable', methods=["POST"]) #Test
+@app.route('/enable', methods=["POST"])
 def enable():
     if request.method == 'POST':
         label = request.json["label"]
+        force_status_check = 1
         account = c.Account(context_io, { 'id': session["context_id"]})
-        source = c.Source(account, { 'label': label , 'status' : 1 })
+        source = c.Source(account, { 'label': label ,'force_status_check' : force_status_check })
         logger.info(source)
-        return json.dumps(source)
+        return json.dumps(source, default=lambda o: o.__dict__)
 
+@app.route('/delete', methods=['POST', 'GET'])
+def removeAccount():
+    #Need to rewrite this. Too long and not using DRY
+    removed = ' Your account has been successfully deleted. We hope to see you again.'
+    error = 'Oops, something went wrong when trying to delete your account. Please contact knowus.io'
+    try:
+        dbremove = dataStore.delete_account(session["context_id"])
+        account = c.Account(context_io, { 'id': session["context_id"]})
+        del_acct = account.delete()
+        logger.info('{0} account has been deleted from contextio'.format(session["context_id"]))
+        session.clear()
+        return render_template('userLogin.html',removed=removed)
+    except:
+        logger.error('App encountered an issue with account: {0} when trying to delete it.'.format(session["context_id"]))
+        session.clear()
+        return render_template('userLogin.html',error=error)
 
 
 if __name__ == "__main__":

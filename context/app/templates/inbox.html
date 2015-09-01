@@ -1,14 +1,23 @@
 {% extends "base.html" %}
 {% block body %}
+{%if mailboxcount == 0 %}
+<p class="warning"> Hey, you will need to add mailboxes before you can view contacts. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+{%else%}
+{% if session['is_demo'] %}
+<h2>Demo Account for {{ session['email'] }}</h2>
+<p>This is a demo account as such we are not displaying inbox messages</p>
+<p>You can check out the personality and tone dashboards though</p>
+{% else %}
 <div class="row" ng-controller='InboxController as app'>
   <div class="col-md-12">
     <div class="row">
       <div class="col-md-6 col-md-offset-3" ng-show="app.status.pending_contacts">
         <div class="text-center">
           <p>To allow us to analyze your mailbox effectively you need to select one or more contacts to include</p>
+          <input class="form-control" ng-model="contactCtrl.searchFilter.$" placeholder="Enter a name or email" />
         </div>
         <table class="table">
-          <tr ng-repeat="contact in app.contacts.contacts">
+          <tr ng-repeat="contact in app.contacts.contacts | orderBy:'-is_selected' | filter:contactCtrl.searchFilter | limitTo:25">
             <td class="col-sm-10">[[ app.contactText(contact)]]</td>
             <td><a class="btn btn-xs btn-default pull-right" ng-click="app.toggleContact(contact)">
               <span ng-show="app.contactExists(contact, [[$index]])">Remove</span>
@@ -35,4 +44,6 @@
           <td>[[ message.subject ]]</td></tr>
         </table>
       </div>
+    {%endif%}
+{% endif %}
 {% endblock body %}
