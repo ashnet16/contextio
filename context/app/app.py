@@ -407,6 +407,8 @@ def sendUserInfo():
         session["provider_name"] = 'local'
         session["email"] = user['_id']
         session['firstname'] = user['firstname'];
+        if 'is_demo' in user:
+            session['is_demo'] = user['is_demo']
         return json.dumps({ 'success': True, 'user': user['_id'] });
     except Exception as e:
         return json.dumps({ 'success': False, 'error': str(e) });
@@ -688,7 +690,7 @@ def getTone():
     else:
         userTone = dataStore.getContactToneBySender(session['email'])
         # print userTone
-    return json.dumps(userTone)
+    return json.dumps(userTone, default=lambda o: o.__dict__)
 
 @app.route('/get-user-tone', methods=["GET", "POST"])
 def getUserTone():

@@ -3,6 +3,11 @@
 {%if mailboxcount == 0 %}
 <p class="warning"> Hey, you will need to add mailboxes before you can view contacts. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
 {%else%}
+{% if session['is_demo'] %}
+<h2>Demo Account for {{ session['email'] }}</h2>
+<p>This is a demo account as such we are not displaying inbox messages</p>
+<p>You can check out the personality and tone dashboards though</p>
+{% else %}
 <div class="row" ng-controller='InboxController as app'>
   <div class="col-md-12">
     <div class="row">
@@ -40,4 +45,5 @@
         </table>
       </div>
     {%endif%}
+{% endif %}
 {% endblock body %}
