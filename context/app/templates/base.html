@@ -43,24 +43,40 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand page-scroll" href="/" style="font-size:65px;"><b>K</b>no<b>w</b>Us</a>
+                    <a class="navbar-brand page-scroll" href="/" style="font-size:40px;"><b>K</b>no<b>w</b>Us</a>
                 </div>
                 <div id="navbar" class="collapse navbar-collapse">
                     <ul class="nav navbar-nav">
                         <li ng-class="{active:menu.route=='/inbox'}"><a href="/">Home</a></li>
-                        <li ng-class="{active:menu.route=='/mailboxes'}"><a href="/mailboxes">Mailboxes</a></li>
-                        <li ng-class="{active:menu.route=='/showMoreContacts'}"><a href="/showMoreContacts">Contacts</a></li>
-                        <li ng-class="{active:menu.route=='/personality-dashboard'}"><a href="/personality-dashboard">Personality Dashboard</a></li>
-                        <li ng-class="{active:menu.route=='/tone-dashboard'}"><a href="/tone-dashboard">Tone Dashboard</a></li>
+                        <li class="dropdown" ng-class="{active:menu.route=='/mailboxes'||menu.route=='/showMoreContacts'}">
+                          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Settings <span class="caret"></span></a>
+                          <ul class="dropdown-menu">
+                            <li ng-class="{active:menu.route=='/mailboxes'}"><a href="/mailboxes">Mailboxes</a></li>
+                            <li ng-class="{active:menu.route=='/showMoreContacts'}"><a href="/showMoreContacts">Contacts</a></li>
+                          </ul>
+                        </li>
+                        <li class="dropdown" ng-class="{active:menu.route=='/personality-dashboard'||menu.route=='/tone-dashboard'}">
+                          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dashboards <span class="caret"></span></a>
+                          <ul class="dropdown-menu">
+                            <li ng-class="{active:menu.route=='/personality-dashboard'}"><a href="/personality-dashboard">Personality Dashboard</a></li>
+                            <li ng-class="{active:menu.route=='/tone-dashboard'}"><a href="/tone-dashboard">Tone Dashboard</a></li>
+                          </ul>
+                        </li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a>Hi {{ session['firstname'] }}</a></li>
+                      <li class="dropdown">
+                      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Hi {{ session['firstname'] }} <span class="caret"></span></a>
+                      <ul class="dropdown-menu">
                         <li><a href="/logout">Logout</a></li>
                         {% if session['is_demo'] %}
+                        <li role="separator" class="divider"></li>
                         <li class="disabled"><a class="disabled">Delete Account</a></li>
                         {% else %}
                         <li><a href="/delete">Delete Account</a></li>
                         {% endif %}
+                      </ul>
+                    </li>
+
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
