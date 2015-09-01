@@ -1,7 +1,10 @@
 from pymongo import MongoClient
-from pymongo.collection import ReturnDocument 
+from pymongo.collection import ReturnDocument
 from helpers.parser import Parser
 import json
+from nouslog import log
+
+logger = log()
 
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
@@ -39,6 +42,11 @@ class DataStore:
         result = users.update_one({ '_id': id }, { '$set': user })
         return result == 1
 
+    def addUserSource(self, context_id, source):
+        users = self.db.users
+        result = users.update_one({ 'context_id': context_id }, { '$push': { 'sources': source } })
+        return result == 1
+
     def addUserContact(self, id, **contact):
         users = self.db.users
         result = users.update_one({ '_id': id }, { '$push': { 'contacts': contact } })
@@ -69,7 +77,7 @@ class DataStore:
 
     def saveMessage(self, **message):
         messagesCollection = self.db.messages
-        result = messagesCollection.insert_one(message).inserted_id
+        result = messagesCollection.update({'_id': message['_id']}, message, True)
         return message
 
     def savePersonality(self, **personality):
@@ -167,9 +175,8 @@ class DataStore:
             return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
 
     def hasContactsPopulated(self, userEmail):
-        contactsCollection = self.db.contactsCollection
+        contactsCollection = self.db.contacts
         return contactsCollection.find( {'user': userEmail}).count()
-
 
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
@@ -237,5 +244,37 @@ class DataStore:
             return True
         else:
             logger.info("Did not insert contact %s ", contactInfo['email'])
+
+    def delete_account(self, context_id):
+        """ This function grabs the list of collections in the nous database and removes any document related to the context_id. In addition, it deletes the user account from contextio"""
+        try:
+            collections = [collection for collection in  self.db.collection_names() if not collection.startswith('system.')]
+            for collect in collections:
+               self.db[collect].remove({'context_id':context_id})
+               return True
+            logger.info('{0} data removed from all collections'.format(context_id))
+        except Exception as e:
+            logger.error('Encountered the following error when trying to delete account {0}:{1}'.format(context_id, e))
+            return False
+
+    def getmailboxcount(self, context_id):
+        """ This function locates all documents within all collections in the nous database and deletes the documents as one part of the account deletion process."""
+        document = self.db.users.find({"context_id":context_id})
+        mailbox_count = [x for x in document]
+        return mailbox_count[0]['mailboxes']
+
+    def updatemailbox(self, context_id, mailboxes):
+        try:
+            self.db.users.update({"context_id" : context_id},{ '$set': { "mailboxes" : mailboxes}})
+            logger.info('Mailbox was added or deleted')
+        except Exception as e:
+            logger.error('The following issue was encountered when trying to update mailboxes:{0}'.format(context_id))
+
+
+
+
+
+
+
 
     #def getMessages(self, email):

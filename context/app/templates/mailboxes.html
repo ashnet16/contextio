@@ -42,10 +42,10 @@ function removeSource(label) {
      }
    });
 };
-function enable(label,status) {
+function enable(label,force_status_check) {
     var data = {
         "label":label,
-        "status":status
+        "force_status_check":force_status_check
     };
     $.ajax({
         url: '/enable',
@@ -63,6 +63,11 @@ function enable(label,status) {
 };
 </script>
 <h2> List of mailboxes </h2>
+{% if session['is_demo'] %}
+<h2>Demo Account for {{ session['email'] }}</h2>
+<p>This is a demo account as such you cannot manage associated mailboxes</p>
+<p>You can check out the personality and tone dashboards though</p>
+{% else %}
 <div>
     <table>
         <tr>
@@ -76,20 +81,26 @@ function enable(label,status) {
             <td>{{ source["status"] }}</td>
             <td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td>
             {%if source["status"] == "DISABLED"%}
-              <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
-              {%endif%}
-            
+              <td><a href="javascript: enable('{{source["label"]}},{{source["force_status_check"]}}')">Enable Account</button></td>
+            {%endif%}
+
         </tr>
         {% endfor %}
-        
+
     </table>
 </div>
 <div>
     <p id = "add">Enter the email address for the mailbox you would like to add:</p>
-    <div>
-        <label>Email:</label><br/>
-        <input id="email" type="email" />
+    <div class="col-md-4">
+      <div class="form-group">
+        <label>Email:</label>
+        <input id="email" type="email" class="form-control" />
+      </div>
+      <div class="btn-toolbar">
+      <button id="addSource" type="button" class="btn btn-primary">Add</button>
+      </div>
     </div>
-    <button id="addSource" type="button">Add</button>
+
 </div>
+{% endif %}
 {% endblock body %}

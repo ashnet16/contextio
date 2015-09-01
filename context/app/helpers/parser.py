@@ -185,3 +185,20 @@ class Parser:
         pTree = personality['personality']['tree']
         for p in pTree:
             pChild = p['child']
+
+    def processMessage(self, owner, msg):
+        message = {
+            'datetime': msg.date,
+            'subject': msg.subject,
+            'from': msg.addresses['from'],
+            '_id': msg.message_id,
+            'owner': owner,
+            'to': msg.addresses['to']
+            }
+        for mInfo in msg.body:
+            content = self.extractMessage(mInfo['content'])
+            toneJson = self.toneAnalyzer.getTone(content.encode('utf-8'))
+            message['tone'] = toneJson
+            toneAvg = self.extractToneAverage(toneJson)
+            message['avgTone'] = toneAvg
+        return message

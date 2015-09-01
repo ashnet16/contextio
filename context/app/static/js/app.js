@@ -1,6 +1,9 @@
 angular.module('nousApp', []).config(function($interpolateProvider){
   $interpolateProvider.startSymbol('[[').endSymbol(']]');
-}).factory('StatusChecker', function($http,$q){
+}).controller('MenuController', [function() {
+  var menu = this
+  menu.route = window.location.pathname;
+}]).factory('StatusChecker', function($http,$q){
  return {
       poll : function(api){
           var deferred = $q.defer();
@@ -29,6 +32,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
 
   var checkStatus = function () {
     StatusChecker.poll('/check-status').then(function(data){
+        if(data.redirect) window.location = '/'
         if(data.pending_contacts &&
           (!app.contacts || app.contacts.contacts.length == 0)) {
           app.getContacts();
@@ -42,7 +46,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
   };
 
   app.contactText = function(contact) {
-    return contact.name ? contact.name : contact.email;
+    return contact.name ? contact.name + ' (' + contact.email + ')' : contact.email;
   }
   app.contactExists = function(contact) {
     for(i=0;i<app.contacts.selectedContacts.length;i++) {
@@ -61,7 +65,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
   }
 
   app.contactName = function(message) {
-    return message.addresses.from.name ? message.addresses.from.name : message.address.from.email;
+    return message.addresses.from.name ? message.addresses.from.name : message.addresses.from.email;
   }
 
   app.toggleContact = function(contact, index) {
@@ -152,7 +156,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     // initialize the default value of update to false
     update = update || false
 
-    
+
     $http.post('/get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
       then(function(response) {
         // this callback will be called asynchronously
@@ -252,7 +256,7 @@ angular.module('nousApp', []).config(function($interpolateProvider){
     }
   }
   dashboard.getContactTone = function(update) {
-    
+
     // initialize the default value of update to false
     update = update || false
 
@@ -267,13 +271,13 @@ angular.module('nousApp', []).config(function($interpolateProvider){
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
         dashboard.rollupTone();
-        
+
     // the update value is assigned in the template
     if (update == true) {
 
           // update tone chart with new contact's data
           toneChart(dashboard.selectedTone, update)
-    
+
     }
 
       }, function(response) {
@@ -305,7 +309,98 @@ angular.module('nousApp', []).config(function($interpolateProvider){
   return function (input, decimals) {
     return $filter('number')(input * 100, decimals) + '%';
   };
-}]);;
+}]).controller('ContactsController', ['$http', 'StatusChecker', function($http, StatusChecker) {
+  var contactCtrl = this;
+  contactCtrl.status = {}
+  var timer = null;
+  var checkStatus = function () {
+    StatusChecker.poll('/check-status').then(function(data){
+        if(contactCtrl.status.pending_analysis == true
+          && data.pending_analysis == false) {
+            window.clearInterval(timer);
+          }
+        contactCtrl.status = data;
+    });
+  };
+
+  contactCtrl.doAnalysis = function() {
+    $http.post('/do-analysis', {}).
+      then(function(response) {
+        // this callback will be called asynchronously
+        console.log(response)
+        contactCtrl.status.pending_analysis = true;
+        timer = setInterval(checkStatus, 10000);
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
+  contactCtrl.contactText = function(contact) {
+    return contact.name ? contact.name + ' (' + contact.email + ')' : contact.email;
+  }
+  contactCtrl.contactExists = function(contact) {
+    for(i=0;i<contactCtrl.contacts.selectedContacts.length;i++) {
+      var selected = contactCtrl.contacts.selectedContacts[i];
+      if(selected && selected.emails) {
+        for(x=0;x<selected.emails.length;x++) {
+          if(selected.emails[x] === contact.email) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  contactCtrl.toggleContact = function(contact, index) {
+    var contactEmailObj = {
+      "email":contact.email
+    };
+    if(contactCtrl.contactExists(contact)) {
+      $http.post('/removeContact', { contact: contact }).
+        then(function(response) {
+          // this callback will be called asynchronously
+          if(response.data)
+            contactCtrl.contacts.selectedContacts.splice(index, 1);
+          // TODO display an error to the user
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    } else {
+      $http.post('/selectContact', contactEmailObj).
+        then(function(response) {
+          // this callback will be called asynchronously
+          console.log(response)
+          contactCtrl.contacts.selectedContacts.push(response.data);
+          contactCtrl.added = true;
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    }
+  }
+
+  $http.get('/get-contacts').
+    then(function(response) {
+      // this callback will be called asynchronously
+      console.log(response)
+      contactCtrl.contacts = response.data;
+    }, function(response) {
+      // called asynchronously if an error occurs
+      // or server returns response with an error status.
+    });
+    $http.get('/check-status').
+      then(function(response) {
+        // this callback will be called asynchronously
+        console.log(response)
+        contactCtrl.status = response.data;
+        if(contactCtrl.status.pending_analysis) {
+          timer = setInterval(checkStatus, 10000);
+        }
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+}]);
 
 var contacts = []
 var timespan = 100;
