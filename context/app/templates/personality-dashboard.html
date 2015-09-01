@@ -57,6 +57,26 @@
   text-transform:capitalize;
 }
 
+.big-5-score {
+  text-transform:capitalize;
+}
+
+.big-5-score td {
+  text-align: center;
+}
+
+.big-5-score th {
+  text-align: center;
+}
+
+.panel-heading {
+  font-weight: bold;
+}
+
+.chart {
+  /*border: thin solid dimgrey;*/
+}
+
 </style>
 <script>
 
@@ -66,16 +86,20 @@ function buildPersonalityChart(contactData, update) {
   // current user's first name
   var currentUser = "{{ session['firstname'] }}"
 
+
   // contains both the user and contact data - set in the angular controller
   var userData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.userPersonality
   // initialize array where data for chart will be kept
   var data = []
 
   // flatten and extract our user data to make it easier to work with
-   userData.children.forEach(function(d) {
+   userData.children.forEach(function(d,i) {
     obj = {};
     obj.cat = d.name
     obj.data = []
+    if (i === 0) {
+      $("#currentUserScore").text(d.percentage)
+    }
     d.children.forEach(function(dd) {
       childeObj = {}
       childeObj.name = dd.name;
@@ -87,15 +111,21 @@ function buildPersonalityChart(contactData, update) {
 
   // merge the contact data with the user data 
   contactData.forEach(function(d,i) {
+    if (i === 0) {
+      var contactName = d.name
+      $("#contact").text(contactName)
+      $("#contactScore").text(d.value)
+    }
     d.data.forEach(function(dd,ii) {
       data[i].data[ii][d.name] = dd
     })
       
   })
 
-    
+  $("#currentUser").text(currentUser)
+  
     // set our margin attributes
-    var margin = {top: 50, right: 20, bottom: 150, left: 40},
+    var margin = {top: 50, right: 20, bottom: 50, left: 40},
         width = $(".col-md-8").width() - margin.right - margin.left
         height = 300 
 
@@ -340,8 +370,14 @@ function buildPersonalityChart(contactData, update) {
       $("#big-5-description-intro").text(intro)
       $("#big-5-description-high").text(high)
       $("#big-5-description-low").text(low)
+
       // change the header of the description
       $(".description-header").text(category)
+
+      // header on table beneath gropued bar chart
+      $(".panel-heading").text(category)
+
+      $("#userScore").text()
 
       // update data
       updateData(i,data,false)
@@ -420,10 +456,8 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
   <hr />
 
 <div class="row">
-    </div>
   <div class="col-md-8">
-<div class="chart">
-  </div>
+    <div class="chart"></div>
   </div>
   <div class="col-md-4">
         <div class="description-header">Openness</div>
@@ -433,9 +467,24 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
         <p class="big-5-description" id="big-5-description-high">Open to experience are intellectually curious, open to emotion, sensitive to beauty and willing to try new things.</p>
         <p class="score">Low Score</p>
         <p class="big-5-description" id="big-5-description-low">Tend to have more conventional, traditional interests; they are conservative and resistant to change.</p>
+      </div>
     </div>
+</div>
+<div class="row">
+  <div class="col-md-8">
+    <div class="panel panel-default big-5-score">
+      <div class="panel-heading">Openness</div>
+        <table class="table">
+          <tr>
+            <th id="currentUser"></th><th id="contact"></th>
+          </tr>
+          <tr>
+            <td id="currentUserScore"> </td><td id="contactScore"></td>
+          </tr>
+        </table>
     </div>
   </div>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="{{ url_for('static', filename='js/crossfilter.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
