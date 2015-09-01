@@ -73,33 +73,46 @@
   font-weight: bold;
 }
 
-.chart {
-  /*border: thin solid dimgrey;*/
+
+td.selected {
+  font-weight: bold;
+  color: #FEA600;
+}
+
+.breaking-it-down {
+  font-weight: bold;
+}
+
+#breakdown-big5trait {
+  text-transform:capitalize!important;
 }
 
 </style>
 <script>
-
+function num2per(val) {
+  return String(Math.round(val * 100)) + "%"
+}
  
 function buildPersonalityChart(contactData, update) {
  
   // current user's first name
   var currentUser = "{{ session['firstname'] }}"
-
+  $("#user-name").text(currentUser)
 
   // contains both the user and contact data - set in the angular controller
   var userData = $('[ng-model="dashboard.selectedContact"]').scope().dashboard.userPersonality
   // initialize array where data for chart will be kept
   var data = []
 
+  var big5Traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'emotionalrange']
+
+
   // flatten and extract our user data to make it easier to work with
    userData.children.forEach(function(d,i) {
     obj = {};
     obj.cat = d.name
     obj.data = []
-    if (i === 0) {
-      $("#currentUserScore").text(d.percentage)
-    }
+    $("#user-" + big5Traits[i]+ "-score").text(num2per(d.percentage))
     d.children.forEach(function(dd) {
       childeObj = {}
       childeObj.name = dd.name;
@@ -109,13 +122,16 @@ function buildPersonalityChart(contactData, update) {
     data.push(obj)
   })
 
+
+
+
   // merge the contact data with the user data 
   contactData.forEach(function(d,i) {
     if (i === 0) {
       var contactName = d.name
-      $("#contact").text(contactName)
-      $("#contactScore").text(d.value)
+      $("#contact-name").text(contactName)
     }
+    $("#contact-" + big5Traits[i]+ "-score").text(num2per(d.value))
     d.data.forEach(function(dd,ii) {
       data[i].data[ii][d.name] = dd
     })
@@ -359,7 +375,7 @@ function buildPersonalityChart(contactData, update) {
       category = $(this)[0].textContent.toUpperCase()
 
       // update title
-      $(".breakdown-title").text('Breaking it down: ' + category)
+      $("#breakdown-big5trait").text(category)
 
       // set our variables for the descriptions
       var intro = descriptions[category.toLowerCase()].intro
@@ -377,7 +393,13 @@ function buildPersonalityChart(contactData, update) {
       // header on table beneath gropued bar chart
       $(".panel-heading").text(category)
 
-      $("#userScore").text()
+      
+      // remove selected class so that the it's no longer bold
+      $("td").closest(".selected").removeClass("selected")
+
+      // add selected class to table beneath chart to make it bold
+      $("#user-" + big5Traits[i].toLowerCase() + "-score").addClass("selected")
+      $("#contact-" + big5Traits[i].toLowerCase() + "-score").addClass("selected")
 
       // update data
       updateData(i,data,false)
@@ -454,7 +476,9 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
 
   </div>
   <hr />
-
+<div class="col-md-6 breaking-it-down">
+  Breaking it down - <span id="breakdown-big5trait">OPENNESS</span>
+</div>
 <div class="row">
   <div class="col-md-8">
     <div class="chart"></div>
@@ -471,15 +495,17 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
     </div>
 </div>
 <div class="row">
-  <div class="col-md-8">
+  <div class="col-md-12">
     <div class="panel panel-default big-5-score">
-      <div class="panel-heading">Openness</div>
         <table class="table">
           <tr>
-            <th id="currentUser"></th><th id="contact"></th>
+            <th id="">&nbsp;</th><th id="openness-score">Openness</th><th id="conscientiousness-score">Conscientiousness</th><th id="extraversion-score">Extraversion</th><th id="agreeableness-score">Agreeableness</th><th id="emotionalrange-score">Emotional Range</th>
           </tr>
           <tr>
-            <td id="currentUserScore"> </td><td id="contactScore"></td>
+            <td id="user-name"></td><td class="selected" id="user-openness-score"></td><td id="user-conscientiousness-score"></td><td id="user-extraversion-score"></td><td id="user-agreeableness-score"></td><td id="user-emotionalrange-score"></td>
+          </tr>
+          <tr>
+            <td id="contact-name"></td><td class="selected" id="contact-openness-score"></td><td id="contact-conscientiousness-score"></td><td id="contact-extraversion-score"></td><td id="contact-agreeableness-score"></td><td id="contact-emotionalrange-score"></td>
           </tr>
         </table>
     </div>
