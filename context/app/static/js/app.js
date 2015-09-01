@@ -1,4 +1,4 @@
-angular.module('enronApp', []).config(function($interpolateProvider){
+angular.module('nousApp', []).config(function($interpolateProvider){
   $interpolateProvider.startSymbol('[[').endSymbol(']]');
 }).factory('StatusChecker', function($http,$q){
  return {
@@ -15,10 +15,101 @@ angular.module('enronApp', []).config(function($interpolateProvider){
   var app = this;
   app.test = 'This is just a test';
   var timer = null;
-    
+  app.getContacts = function() {
+    $http.get('/get-contacts').
+      then(function(response) {
+        // this callback will be called asynchronously
+        console.log(response)
+        app.contacts = response.data;
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
+
+  var checkStatus = function () {
+    StatusChecker.poll('/check-status').then(function(data){
+        if(data.pending_contacts &&
+          (!app.contacts || app.contacts.contacts.length == 0)) {
+          app.getContacts();
+        }
+        if(app.status.pending_analysis == true
+          && data.pending_analysis == false) {
+            app.loadInbox();
+          }
+        app.status = data;
+    });
+  };
+
+  app.contactText = function(contact) {
+    return contact.name ? contact.name : contact.email;
+  }
+  app.contactExists = function(contact) {
+    for(i=0;i<app.contacts.selectedContacts.length;i++) {
+      var selected = app.contacts.selectedContacts[i];
+      if(selected && selected.emails) {
+        for(x=0;x<selected.emails.length;x++) {
+          if(selected.emails[x] === contact.email) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  app.contactImg = function(message) {
+    return message.person_info[message.addresses.from.email].thumbnail;
+  }
+
+  app.contactName = function(message) {
+    return message.addresses.from.name ? message.addresses.from.name : message.address.from.email;
+  }
+
+  app.toggleContact = function(contact, index) {
+    var contactEmailObj = {
+      "email":contact.email
+    };
+    if(app.contactExists(contact)) {
+      $http.post('/removeContact', { contact: { name: contact.name, emails: contact.emails } }).
+        then(function(response) {
+          // this callback will be called asynchronously
+          if(response.data)
+            app.contacts.selectedContacts.splice(index, 1);
+          // TODO display an error to the user
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    } else {
+      $http.post('/selectContact', contactEmailObj).
+        then(function(response) {
+          // this callback will be called asynchronously
+          console.log(response)
+          app.contacts.selectedContacts.push(response.data);
+          contact.added = true;
+        }, function(response) {
+          // called asynchronously if an error occurs
+          // or server returns response with an error status.
+        });
+    }
+
+  }
+
+  app.doAnalysis = function() {
+    $http.post('/do-analysis', {}).
+      then(function(response) {
+        // this callback will be called asynchronously
+        console.log(response)
+        app.contacts.selectedContacts.push(response.data);
+        app.status.pending_analysis = true;
+        app.status.pending_contacts = false;
+      }, function(response) {
+        // called asynchronously if an error occurs
+        // or server returns response with an error status.
+      });
+  }
 
   app.loadInbox = function() {
-    $http.get('/enron-get-inbox').
+    $http.get('/get-inbox').
       then(function(response) {
         // this callback will be called asynchronously
         console.log(response)
@@ -30,7 +121,8 @@ angular.module('enronApp', []).config(function($interpolateProvider){
         // or server returns response with an error status.
       });
   }
-$http.get('/check-status').
+
+  $http.get('/check-status').
     then(function(response) {
       // this callback will be called asynchronously
       console.log(response)
@@ -41,19 +133,19 @@ $http.get('/check-status').
         app.showInbox = true;
         app.loadInbox();
       }
+      timer = setInterval(checkStatus, 10000);
     }, function(response) {
       // called asynchronously if an error occurs
       // or server returns response with an error status.
     });
 }]).controller('PersonalityController', ['$http', function($http) {
   var dashboard = this;
-
+  
   // initialize a merged data object containing both datasets - used in the grouped bar chart
   dashboard.mergedViewData = [
      dashboard.userPersonality,
      dashboard.contactPersonality
    ]
-
 
   dashboard.getContactPersonality = function(update) {
 
@@ -61,18 +153,18 @@ $http.get('/check-status').
     update = update || false
 
     
-    $http.post('/enron-get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
+    $http.post('/get-fullBig5', { email: dashboard.selectedContact.emails[0]}).
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contactPersonality = response.data;
-
+        
         // initialize array for contact data used in grouped bar chart
         contactData= []
+        
         
       // get the values of the data needed for the contact user
       dashboard.contactPersonality.children.forEach(function(d) {
         obj = {}
-        obj.name = dashboard.selectedContact.name
         obj.cat = d.name
         obj.value = d.percentage
         obj.data = []
@@ -81,52 +173,51 @@ $http.get('/check-status').
         })
         contactData.push(obj)
       })
-
+  
 
       // the update value is assigned in the template
       if (update == true) {
+        console.log(contactData)
           // updates the contact personality chart with the new contact's data
+          // buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
           buildPersonalityChart(contactData, update)
     } else {
           buildPersonalityChart(contactData, false)
         
 
-
-
-    //   // the update value is assigned in the template
-    //   if (update == true) {
-    //       // updates the contact personality chart with the new contact's data
-    //       buildPersonalityChart(dashboard.contactPersonality, "contact-chart", update)
-    // } else {
-    //   buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
+      // buildPersonalityChart(dashboard.contactPersonality, "contact-chart")
     }
+
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
       });
   }
 
-  $http.post('/enron-get-fullBig5', userEmail).
+  $http.post('/get-fullBig5', userEmail).
     then(function(response) {
-      console.log(response)
       // this callback will be called asynchronously
       dashboard.userPersonality = response.data;
-
+      
       // set the value of the user personality 
-      dashboard.mergedViewData[0] = dashboard.userPersonality   
+      dashboard.mergedViewData[0] = dashboard.userPersonality
 
+      // build the user personality chart
       // buildPersonalityChart(dashboard.userPersonality, "user-chart")
 
+
     }, function(response) {
+
       // called asynchronously if an error occurs
       // or server returns response with an error status.
     });
-    $http.get('/enron-get-selected-contacts').
+    $http.get('/get-selected-contacts').
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contacts = response.data;
         dashboard.selectedContact = dashboard.contacts[0]
         dashboard.getContactPersonality();
+
       }, function(response) {
         // called asynchronously if an error occurs
         // or server returns response with an error status.
@@ -170,7 +261,7 @@ $http.get('/check-status').
       if(!dashboard.selectedContact) return dashboard.selectedTone = null;
       data.to = dashboard.selectedContact.emails[0]
     }
-    $http.post('/enron-get-tone', data).
+    $http.post('/get-tone', data).
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.selectedTone = response.data;
@@ -179,6 +270,7 @@ $http.get('/check-status').
     // the update value is assigned in the template
     if (update == true) {
 
+          // update tone chart with new contact's data
           toneChart(dashboard.selectedTone, update)
     
     }
@@ -189,7 +281,7 @@ $http.get('/check-status').
       });
   }
 
-  $http.post('/enron-get-tone', {}).
+  $http.post('/get-tone', {}).
     then(function(response) {
       // this callback will be called asynchronously
       dashboard.selectedTone = response.data;
@@ -200,7 +292,7 @@ $http.get('/check-status').
       // called asynchronously if an error occurs
       // or server returns response with an error status.
     });
-    $http.get('/enron-get-selected-contacts').
+    $http.get('/get-selected-contacts').
       then(function(response) {
         // this callback will be called asynchronously
         dashboard.contacts = response.data;
