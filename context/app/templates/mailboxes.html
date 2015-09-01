@@ -42,10 +42,10 @@ function removeSource(label) {
      }
    });
 };
-function enable(label,status) {
+function enable(label,force_status_check) {
     var data = {
         "label":label,
-        "status":status
+        "force_status_check":force_status_check
     };
     $.ajax({
         url: '/enable',
@@ -76,9 +76,9 @@ function enable(label,status) {
             <td>{{ source["status"] }}</td>
             <td><a href="javascript: removeSource('{{ source["label"]}}')">Remove</button></td>
             {%if source["status"] == "DISABLED"%}
-              <td><a href="javascript: enable('{{ source["label"]}}',status)">Enable Account</button></td>
-              {%endif%}
-
+              <td><a href="javascript: enable('{{source["label"]}},{{source["force_status_check"]}}')">Enable Account</button></td>
+            {%endif%}
+            
         </tr>
         {% endfor %}
 

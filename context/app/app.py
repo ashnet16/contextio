@@ -739,8 +739,9 @@ def showToneDashboard():
 def enable():
     if request.method == 'POST':
         label = request.json["label"]
+        force_status_check = 1
         account = c.Account(context_io, { 'id': session["context_id"]})
-        source = c.Source(account, { 'label': label , 'status' : 1 })
+        source = c.Source(account, { 'label': label ,'force_status_check' : force_status_check })
         logger.info(source)
         return json.dumps(source, default=lambda o: o.__dict__)
 
