@@ -358,7 +358,7 @@ function buildPersonalityChart(contactData, update) {
   }   
 
 
-    $('.list-group-item').click(function(e){
+    $('.trait').click(function(e){
       
       e.preventDefault();
 
@@ -466,11 +466,11 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
       <!-- Big 5 for selected contact goes here -->
       <!-- <p>[[dashboard.contactPersonality]]</p> -->
             <ul class="list-group contact" >
-              <button type="button" class="list-group-item contact selected" id="0" onclick="this.blur();">Openness</button>
-              <button type="button" class="list-group-item contact" id="1" onclick="this.blur();">Conscientiousness</button>
-              <button type="button" class="list-group-item contact" id="2" onclick="this.blur();">Extraversion</button>
-              <button type="button" class="list-group-item contact" id="3" onclick="this.blur();">Agreeableness</button>
-              <button type="button" class="list-group-item contact" id="4" onclick="this.blur();">Emotional Range</button>
+              <button type="button" class="list-group-item trait selected" id="0" onclick="this.blur();">Openness</button>
+              <button type="button" class="list-group-item trait" id="1" onclick="this.blur();">Conscientiousness</button>
+              <button type="button" class="list-group-item trait" id="2" onclick="this.blur();">Extraversion</button>
+              <button type="button" class="list-group-item trait" id="3" onclick="this.blur();">Agreeableness</button>
+              <button type="button" class="list-group-item trait" id="4" onclick="this.blur();">Emotional Range</button>
             </ul>
     </div>
 
@@ -499,7 +499,7 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
     <div class="panel panel-default big-5-score">
         <table class="table">
           <tr>
-            <th id="">&nbsp;</th><th id="openness-score">Openness</th><th id="conscientiousness-score">Conscientiousness</th><th id="extraversion-score">Extraversion</th><th id="agreeableness-score">Agreeableness</th><th id="emotionalrange-score">Emotional Range</th>
+            <th id="">&nbsp;</th><th class="trait openness-score" id="0">Openness</th><th class="trait conscientiousness-score" id="1">Conscientiousness</th><th class="trait extraversion-score" id="2">Extraversion</th><th class="trait agreeableness-score" id="3">Agreeableness</th><th class="trait emotionalrange-score" id="4">Emotional Range</th>
           </tr>
           <tr>
             <td id="user-name"></td><td class="selected" id="user-openness-score"></td><td id="user-conscientiousness-score"></td><td id="user-extraversion-score"></td><td id="user-agreeableness-score"></td><td id="user-emotionalrange-score"></td>
