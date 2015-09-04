@@ -857,7 +857,7 @@ def enronShowToneDashboard():
 @app.route('/enron-logout', methods=["GET"])
 def enronLogout():
     session.clear();
-    return redirect(url_for('enron-demo'))
+    return redirect(url_for('index'))
 
 @app.route('/enron-check-status', methods=["GET"])
 def enronCheckStatus():
