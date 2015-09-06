@@ -179,7 +179,7 @@ function buildPersonalityChart(contactData, update) {
     if (update == true) {
       
       // index allows us to know which element in the data array should be chosen
-      index = $('.list-group-item').closest(".selected")[0].id
+      index = $('.trait').closest(".selected")[0].id
 
       // update the data
       updateData(index, data, update)
