@@ -30,7 +30,7 @@
 }
 
 
-.list-group-item.selected {
+.trait.selected {
   font-weight:bold;
 }
 .big-5-description {
@@ -370,7 +370,7 @@ function buildPersonalityChart(contactData, update) {
       i = $(this)[0].id
 
       // indicate that the previous button is no longer selected
-      $('.list-group-item').closest('.selected').removeClass('selected')
+      $('.trait').closest('.selected').removeClass('selected')
       
       // indicate which button has been selected
       $(this).addClass("selected")
