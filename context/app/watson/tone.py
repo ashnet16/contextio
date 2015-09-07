@@ -14,8 +14,8 @@ class ToneAnalyzerService:
 
         # Local variables
         self.url = "https://gateway.watsonplatform.net/tone-analyzer-experimental/api"
-        self.username = "4593f424-a0d9-4ed7-9e33-b211f955cff2"
-        self.password = "Eitk33rFdTrg"
+        self.username = "d9edb00c-0564-4335-9455-4d9486a39c0f"
+        self.password = "fJgUu2W6Her0"
 
         if vcapServices is not None:
             print("Parsing VCAP_SERVICES")
