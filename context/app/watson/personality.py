@@ -13,8 +13,8 @@ class PersonalityInsightsService:
 
         # Local variables
         self.url = "https://gateway.watsonplatform.net/personality-insights/api"
-        self.username = "2ea068d8-a008-4fc4-ae01-2b6bc29fffc2"
-        self.password = "qq8lSCEjnYQq"
+        self.username = "a180d2e4-f17a-4b23-b317-486828c33bcc"
+        self.password = "UUPPjU2gZgMQ"
 
         if vcapServices is not None:
             print("Parsing VCAP_SERVICES")
