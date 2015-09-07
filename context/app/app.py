@@ -233,6 +233,7 @@ def logout():
 
 @app.route('/inbox', methods=['GET'])
 def inbox():
+    print  'context_id ', session["context_id"]
     mailboxcount = dataStore.getmailboxcount(session["context_id"])
     logger.info("Just checking" )
     if 'provider_name' in session:

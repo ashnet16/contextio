@@ -92,7 +92,7 @@ class DataStore:
 
     def hasPersonality(self, email):
         personalityCollection = self.db.personality
-        num = personalityCollection.find( {'user': userEmail}).count()
+        num = personalityCollection.find( {'user': email}).count()
         if num > 0:
             return True
         else:
@@ -268,8 +268,11 @@ class DataStore:
     def getmailboxcount(self, context_id):
         """ This function locates all documents within all collections in the nous database and deletes the documents as one part of the account deletion process."""
         document = self.db.users.find({"context_id":context_id})
+        #print "document ", document
         mailbox_count = [x for x in document]
-        return mailbox_count[0]['mailboxes']
+        if len(mailbox_count) > 0:
+            if 'mailboxes' in mailbox_count[0]:
+                return mailbox_count[0]['mailboxes']
 
     def updatemailbox(self, context_id, mailboxes):
         try:
