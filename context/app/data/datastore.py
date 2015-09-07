@@ -87,8 +87,16 @@ class DataStore:
 
     def savePersonalities(self, *personalities):
         personalityCollection = self.db.personality
-        result = messagesCollection.insert_many(personalities)
+        result = personalityCollection.insert_many(personalities)
         return len(result.inserted_ids) == len(personalities)
+
+    def hasPersonality(self, email):
+        personalityCollection = self.db.personality
+        num = personalityCollection.find( {'user': userEmail}).count()
+        if num > 0:
+            return True
+        else:
+            return False
 
     def getFullBig5(self, email):
         print email

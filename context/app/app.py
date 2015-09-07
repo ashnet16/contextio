@@ -94,7 +94,8 @@ def runAnalysis(userEmail):
 
         if len(userMsgs) > 0:
             userInfo = parser.analyzeMessages(userMsgs, **{'from_': userEmail, 'to':contactEmail, 'owner': userEmail})
-            dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
+            if dataStore.hasPersonality(userEmail) == False:
+                dataStore.savePersonality(**{ '_id': userEmail, 'personality': userInfo['personality']})
             dataStore.saveMessages(userInfo['emailMessages'])
         else:
             userInfo = {
