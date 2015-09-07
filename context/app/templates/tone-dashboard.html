@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
 {%if mailboxcount == 0 %}
-<p class="warning"> Hey, you will need to add mailboxes before you can view your tone analysis. Add a mailbox by navigating over to Mailboxes and entering an email address you want us to analyze.</p>
+<p class="warning"> Hey, you will need to add mailboxes before you can view your tone analysis. Add a mailbox by navigating over to Mailboxes under settings and entering an email address you want us to analyze.</p>
 {%else%}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dc.cs')}}s">
 <style>

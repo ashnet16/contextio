@@ -89,6 +89,7 @@ function enable(label,force_status_check) {
 
     </table>
 </div>
+{% if mailboxcount == 0 %}
 <div>
     <p id = "add">Enter the email address for the mailbox you would like to add:</p>
     <div class="col-md-4">
@@ -102,5 +103,6 @@ function enable(label,force_status_check) {
     </div>
 
 </div>
+{% endif %}
 {% endif %}
 {% endblock body %}

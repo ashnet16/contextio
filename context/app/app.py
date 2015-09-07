@@ -456,7 +456,8 @@ def removeMailbox():
 def mailboxes():
     account = c.Account(context_io, { 'id': session["context_id"] })
     sources = account.get_sources();
-    return render_template('mailboxes.html', sources=sources)
+    mailboxcount = dataStore.getmailboxcount(session["context_id"])
+    return render_template('mailboxes.html', sources=sources , mailboxcount = mailboxcount )
 
 
 # for when user wants to see more contacts, see inbox.html, when press on arrow, grabs how many times arrows has been pressed with js

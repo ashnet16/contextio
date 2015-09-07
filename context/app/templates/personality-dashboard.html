@@ -441,6 +441,10 @@ function buildPersonalityChart(contactData, update) {
 }
 
 </script>
+
+{%if mailboxcount == 0 %}
+<p class="warning"> Hey, you will need to add mailboxes before you can view your personality analysis. Add a mailbox by navigating over to Mailboxes under settings and entering an email address you want us to analyze.</p>
+{%else%}
 <div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
     <h2>Personality Dashboard</h2>
@@ -521,4 +525,5 @@ In psychology, the Big Five personality traits are five broad domains or dimensi
 <script src="{{ url_for('static', filename='js/dc.js')}}"></script>
 <script src="{{ url_for('static', filename='js/queue.js')}}"></script>
 <script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script>
+{%endif%}
 {% endblock body %}
