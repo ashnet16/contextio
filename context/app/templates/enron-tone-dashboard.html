@@ -45,11 +45,12 @@
 
 .line {
   fill: none;
-  stroke: steelblue;
+  stroke: orange;
   stroke-width: 1.5px;
 }
 
 .area {
+  display:none;
     fill: lightsteelblue;
     stroke-width: 0;
 }
@@ -137,12 +138,20 @@ function toneChart(data, update) {
   return aggData
   } // groupByAvg
 
+    // hack to make the chart look better and not have such a wide range on the x axis
+  var  minDate = new Date("1999", "11", "01")
+
   // get grouped data
   var data = groupByAvg(data);
 
       // convert datetime from milliseconds
       data.forEach(function(d) {
         d.datetime = new Date(d.datetime * 1000);
+        // hack to make the chart look better and not have such a wide range on the x axis
+
+        if (d.datetime < minDate) {
+          d.datetime = new Date("1999", "11", "01")
+        } 
       })
 
   var margin = {top: 30, right: 20, bottom: 150, left: 50},
@@ -171,6 +180,7 @@ function toneChart(data, update) {
     updateContactData(data)
   } else {
 
+
   // initialize area object for filling the area under the line
   var area = d3.svg.area()
       .x(function(d) { return x(d.datetime); })
@@ -189,13 +199,10 @@ function toneChart(data, update) {
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-     x.domain(d3.extent(data, function(d) { return d.datetime; }));
+    // x.domain(d3.extent(data, function(d) { return d.datetime; }));
+     x.domain([minDate, d3.max(data, function(d) { return d.datetime; })]);
      y.domain(d3.extent(data, function(d) { return d['Social Tone.Conscientiousness']; }));
 
-    svg.append("path")
-            .datum(data)
-            .attr("class", "area")
-            .attr("d", area);
 
       svg.append("g")
           .attr("class", "x axis")
@@ -221,7 +228,9 @@ function toneChart(data, update) {
 
       var svg = d3.select("svg")
 
-        x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        minDate = new Date("1999", "11", "01")
+        // x.domain(d3.extent(data, function(d) { return d.datetime; }));
+        x.domain([minDate, d3.max(data, function(d) { return d.datetime; })]);
         y.domain(d3.extent(data, function(d) { return d[cat]; }));
 
         svg.select('.x.axis')
@@ -269,6 +278,9 @@ function toneChart(data, update) {
         cat = $(this)[0].selectedOptions[0].id
         updateData(cat)
       })
+
+
+
 
   function updateContactData(data) {
         

@@ -14,13 +14,20 @@ body {
 
 /* Custom navbar */
 .navbar-brand ,.navbar-nav>li>a {
-  	padding-left: 30px;
+    padding-left: 30px;
     padding-right: 30px;
-	padding-top: 20px;
-	padding-bottom: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
+
+.navbar-inverse .navbar-brand {
+    font-family: "Poiret One","Helvetica Neue",Helvetica,Arial,cursive;
+    font-size: 30px;
+    color: #fea600;
+}
+
 .navbar-nav>.active>a {
-	opacity:.6;
+  opacity:.6;
 }
 
 #box td {
@@ -29,9 +36,4 @@ body {
 
 #add {
     margin-top: 20px;
-}
-
- 
-.navbar-brand {
-  color: #FEA600!important;
 }
