@@ -150,7 +150,7 @@ function buildPersonalityChart(contactData, update) {
         height = 300 
 
     // each of the Big 5 id elements corresponds to it's index within the data
-    var index = $('.list-group-item').closest(".selected")[0].id
+    var index = $('.trait').closest(".selected")[0].id
 
     var x0 = d3.scale.ordinal()
       .rangeRoundBands([0, width], .1);
