@@ -397,7 +397,7 @@
 <script src="{{ url_for('static', filename='js/queue.js')}}"></script>
 <script src="{{ url_for('static', filename='js/d3.tip.min.js')}}"></script><div class="row" ng-controller="PersonalityController as dashboard">
   <div class="col-sm-12">
-    <h2>Personality Dashboard</h2>
+    <h2>Personality Dashboard for {{ session['enronEmail'] }} </h2>
     <hr />
     <div class="row">
       <div class="col-md-6">

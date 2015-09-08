@@ -112,6 +112,10 @@ class DataStore:
         msgJson[email] = mList
         return msgJson
 
+    
+         
+         
+
     def getContactToneBySender(self, email):
         messagesCollection = self.db.messages
         messages = messagesCollection.find({'from':email})
@@ -171,6 +175,59 @@ class DataStore:
         print 'find and update ', newContact
         return newContact
 
+    def saveUser(self, user):
+        users = self.db.users
+        result = users.update({ '_id': user['_id']}, user, True)
+        return result == 1
+
+    def findAndUpdateContact(self, id):
+        contactsCollection = self.db.contacts
+        filteredContacts = self.db.filteredContacts
+        contacts = contactsCollection.find( {'_id': id} )
+        for contact in contacts:
+            filteredContacts.update( {'_id': id}, {"$set": contact}, upsert = True)
+
+    def findAndUpdateMessages(self, from_, to):
+        messagesCollection = self.db.messages
+        filteredMessages = self.db.filteredMessages
+        messages =   messagesCollection.find({'from':from_, 'to': to})
+        for message in messages:
+            id = message['_id']
+            filteredMessages.update( {'_id': id}, {"$set": message}, upsert = True)
+
+    def findAndUpdatePersonalities(self, email):
+        pCollection = self.db.personality
+        filteredPersonalities = self.db.filteredPersonalities
+        personalities =   pCollection.find({'_id':email})
+        for personality in personalities:   
+            filteredPersonalities.update( {'_id': email}, {"$set": personality}, upsert = True)
+
+    def findAndUpdateUser(self, email):
+        usersCollection = self.db.users
+        filteredUsers = self.db.filteredUsers
+        userCursor =   usersCollection.find({'_id':email})
+        contactsCursor=   usersCollection.find({'_id':email},{'contacts':1, '_id':0})
+        newContacts = []
+        contacts = contactsCursor.__getitem__(0)
+        #print 'CONTACTS ==== ', contacts['contacts']
+        for contact in contacts['contacts']:
+            #print '---> ', contact
+            if contact['email'] == 'andrew.kelemen@enron.com':
+                newContacts.append(contact)
+            if contact['email'] == 'missy.sturgeon@cinergy.com':
+                newContacts.append(contact)
+            if contact['email'] == 'rosanna.migliaccio@robertwalters.com':
+                newContacts.append(contact)
+            if contact['email'] == 'clukawski@hitt-gc.com':
+                newContacts.append(contact)
+            if contact['email'] == 'dgioffre@hotmail.com':
+                newContacts.append(contact)
+        user = userCursor.__getitem__(0)
+        user['contacts'] = newContacts
+          
+        filteredUsers.update( {'_id': email}, {"$set": user}, upsert = True)
+
+
     def getContactsByUser(self,  userEmail, selected=None):
         contactsCollection = self.db.contacts
         print 'getContactsByUser ',  userEmail
@@ -183,9 +240,13 @@ class DataStore:
             return contactsCollection.find( {'user': userEmail, 'is_selected': False} )
 
     def hasContactsPopulated(self, userEmail):
-        contactsCollection = self.db.contactsCollection
+        contactsCollection = self.db.contacts
         return contactsCollection.find( {'user': userEmail}).count()
 
+    def saveContact(self, contact):
+        contactsCollection = self.db.contacts
+        result = contactsCollection.update({ '_id': contact['_id']}, contact, True)
+        return result == 1
 
     def getRelationshipsForUser(self, userEmail):
         relationshipsCollection = self.db.relationships
