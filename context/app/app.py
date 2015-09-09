@@ -134,7 +134,8 @@ def getNext50Contact(account, user, skip):
                     'thumbnail':contact.name,
                     'last_received':contact.last_received,
                     'last_sent':contact.last_sent,
-                    'count':contact.count
+                    'count':contact.count,
+                    'context_id':session["context_id"]  # for deletion
                     }
         contactNames.append(contact.emails[0])
         contactId = user['_id'] + '_' + contact.emails[0]
@@ -613,7 +614,8 @@ def getUserContacts():
                         'thumbnail':contact.name,
                         'last_received':contact.last_received,
                         'last_sent':contact.last_sent,
-                        'count':contact.count
+                        'count':contact.count,
+                        'context_id':session["context_id"] #Adding this for account deletion
                         }
             contactNames.append(contact.emails[0])
             contactId = session['email'] + '_' + contact.emails[0]
